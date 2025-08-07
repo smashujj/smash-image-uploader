@@ -44,12 +44,15 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({ url: uploadResult.secure_url }),
     };
-    } catch (err) {
-    console.error("Upload failed", err); // This line is good
+  } catch (uploadErr) {
+    console.error("Cloudinary upload error:", uploadErr);
+
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to upload image", details: err.message || err.toString() }),
+      body: JSON.stringify({
+        error: "Upload to Cloudinary failed",
+        details: uploadErr.message || uploadErr.toString() || "Unknown error"
+      }),
     };
   }
-
 };
