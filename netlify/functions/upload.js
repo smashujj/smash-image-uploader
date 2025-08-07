@@ -1,6 +1,5 @@
 const cloudinary = require("cloudinary").v2;
-const { IncomingForm } = require("formidable");
-const fs = require("fs");
+const Busboy = require("busboy");
 
 // Cloudinary config
 cloudinary.config({
@@ -9,7 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-exports.handler = async (event, context) => {
+exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
@@ -17,47 +16,38 @@ exports.handler = async (event, context) => {
     };
   }
 
-  // Required to parse multipart form data
-  const form = new IncomingForm({ multiples: false });
-
-
   return new Promise((resolve, reject) => {
-    form.parse(event, async (err, fields, files) => {
-      if (err) {
-        console.error("Form parse error:", err);
-        resolve({
-          statusCode: 400,
-          body: JSON.stringify({ error: "Form parse failed" }),
-        });
-        return;
-      }
-
-      const uploadedFile = files.image;
-
-      if (!uploadedFile) {
-        resolve({
-          statusCode: 400,
-          body: JSON.stringify({ error: "No file uploaded" }),
-        });
-        return;
-      }
-
-      try {
-        const uploadResult = await cloudinary.uploader.upload(uploadedFile.filepath, {
-          resource_type: "image",
-        });
-
-        resolve({
-          statusCode: 200,
-          body: JSON.stringify({ url: uploadResult.secure_url }),
-        });
-      } catch (uploadErr) {
-        console.error("Cloudinary upload error:", uploadErr);
-        resolve({
-          statusCode: 500,
-          body: JSON.stringify({ error: "Upload to Cloudinary failed" }),
-        });
-      }
+    const busboy = Busboy({
+      headers: {
+        "content-type": event.headers["content-type"] || event.headers["Content-Type"],
+      },
     });
+
+    let fileUpload = null;
+
+    busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
+      const cloudStream = cloudinary.uploader.upload_stream(
+        { resource_type: "image" },
+        (error, result) => {
+          if (error) {
+            console.error("Cloudinary error", error);
+            reject({
+              statusCode: 500,
+              body: JSON.stringify({ error: "Upload failed" }),
+            });
+          } else {
+            resolve({
+              statusCode: 200,
+              body: JSON.stringify({ url: result.secure_url }),
+            });
+          }
+        }
+      );
+
+      file.pipe(cloudStream);
+    });
+
+    busboy.write(Buffer.from(event.body, "base64"));
+    busboy.end();
   });
 };
