@@ -624,6 +624,7 @@ return availablePlaceholders.shift();
     }
 
     try {
+    console.log("Uploading file:", file);
       const compressedFile = await ensureUnder500KB(file);
       const formData = new FormData();
       formData.append("image", compressedFile);
@@ -636,7 +637,7 @@ return availablePlaceholders.shift();
       const data = await res.json();
 
       if (!res.ok || !data.url) {
-        console.error("Upload failed:", data);
+        console.error("Upload failed:", JSON.stringify(data, null, 2));
         return "";
       }
 
@@ -845,6 +846,7 @@ async function uploadAndPasteLinks() {
     }
 
     try {
+    console.log("Uploading file:", file);
       const compressedFile = await ensureUnder500KB(file);
       const formData = new FormData();
       formData.append("image", compressedFile);
