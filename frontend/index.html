@@ -626,7 +626,7 @@ return availablePlaceholders.shift();
     try {
       const compressedFile = await ensureUnder500KB(file);
       const formData = new FormData();
-      formData.append('file', compressedFile);
+      formData.append("image", compressedFile);
 
       const res = await fetch('/.netlify/functions/upload', {
         method: 'POST',
@@ -847,7 +847,7 @@ async function uploadAndPasteLinks() {
     try {
       const compressedFile = await ensureUnder500KB(file);
       const formData = new FormData();
-      formData.append('file', compressedFile);
+      formData.append("image", compressedFile);
 
       const res = await fetch('/.netlify/functions/upload', {
         method: 'POST',
