@@ -1,5 +1,4 @@
 const cloudinary = require("cloudinary").v2;
-const Busboy = require("busboy");
 
 // Cloudinary config
 cloudinary.config({
@@ -16,38 +15,53 @@ exports.handler = async (event) => {
     };
   }
 
-  return new Promise((resolve, reject) => {
-    const busboy = Busboy({
-      headers: {
-        "content-type": event.headers["content-type"] || event.headers["Content-Type"],
-      },
-    });
+  try {
+    const contentType = event.headers["content-type"] || event.headers["Content-Type"];
+    const boundary = contentType.split("boundary=")[1];
 
-    let fileUpload = null;
+    const bodyBuffer = Buffer.from(event.body, "base64");
+    const parts = bodyBuffer.toString().split(`--${boundary}`);
 
-    busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
-      const cloudStream = cloudinary.uploader.upload_stream(
-        { resource_type: "image" },
-        (error, result) => {
-          if (error) {
-            console.error("Cloudinary error", error);
-            reject({
-              statusCode: 500,
-              body: JSON.stringify({ error: "Upload failed" }),
-            });
-          } else {
-            resolve({
-              statusCode: 200,
-              body: JSON.stringify({ url: result.secure_url }),
-            });
-          }
+    const filePart = parts.find(part => part.includes("filename="));
+
+    const fileBase64 = filePart
+      .split("\r\n\r\n")[1]
+      .split("\r\n")[0];
+
+    const buffer = Buffer.from(fileBase64, "binary");
+
+    // Upload to Cloudinary
+    const uploadResponse = await cloudinary.uploader.upload_stream(
+      { resource_type: "image" },
+      (error, result) => {
+        if (error) {
+          throw error;
         }
-      );
+        return result;
+      }
+    );
 
-      file.pipe(cloudStream);
-    });
+    // Upload using a stream
+    const stream = cloudinary.uploader.upload_stream(
+      { resource_type: "image" },
+      (error, result) => {
+        if (error) {
+          console.error("Upload error", error);
+        }
+        return result;
+      }
+    );
+    stream.end(buffer);
 
-    busboy.write(Buffer.from(event.body, "base64"));
-    busboy.end();
-  });
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ success: true }),
+    };
+  } catch (err) {
+    console.error("Upload failed", err);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ error: "Failed to process image" }),
+    };
+  }
 };
