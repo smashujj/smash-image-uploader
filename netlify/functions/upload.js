@@ -23,45 +23,32 @@ exports.handler = async (event) => {
     const parts = bodyBuffer.toString().split(`--${boundary}`);
 
     const filePart = parts.find(part => part.includes("filename="));
+    const contentTypeLine = filePart.split("\r\n")[1];
+    const fileType = contentTypeLine.split(": ")[1];
 
-    const fileBase64 = filePart
-      .split("\r\n\r\n")[1]
-      .split("\r\n")[0];
+    const fileData = filePart.split("\r\n\r\n")[1].split("\r\n")[0];
+    const fileBuffer = Buffer.from(fileData, "binary");
 
-    const buffer = Buffer.from(fileBase64, "binary");
-
-    // Upload to Cloudinary
-    const uploadResponse = await cloudinary.uploader.upload_stream(
-      { resource_type: "image" },
-      (error, result) => {
-        if (error) {
-          throw error;
+    const uploadResult = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { resource_type: "image" },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
         }
-        return result;
-      }
-    );
-
-    // Upload using a stream
-    const stream = cloudinary.uploader.upload_stream(
-      { resource_type: "image" },
-      (error, result) => {
-        if (error) {
-          console.error("Upload error", error);
-        }
-        return result;
-      }
-    );
-    stream.end(buffer);
+      );
+      stream.end(fileBuffer);
+    });
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ success: true }),
+      body: JSON.stringify({ url: uploadResult.secure_url }),
     };
   } catch (err) {
     console.error("Upload failed", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to process image" }),
+      body: JSON.stringify({ error: "Failed to upload image" }),
     };
   }
 };
