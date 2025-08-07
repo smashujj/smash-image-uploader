@@ -16,13 +16,12 @@ exports.handler = async (event, context) => {
     };
   }
 
-  return new Promise((resolve, reject) => {
-    const busboy = new Busboy({
-      headers: {
-        "content-type": event.headers["content-type"] || event.headers["Content-Type"],
-      },
-    });
-
+return new Promise((resolve, reject) => {
+  const busboy = Busboy({
+    headers: {
+      "content-type": event.headers["content-type"] || event.headers["Content-Type"],
+    },
+  });
     let fileBuffer = Buffer.alloc(0);
     let fileUploaded = false;
 
