@@ -1,5 +1,5 @@
 const cloudinary = require("cloudinary").v2;
-const formidable = require("formidable");
+const { IncomingForm } = require("formidable");
 const fs = require("fs");
 
 // Cloudinary config
@@ -18,7 +18,8 @@ exports.handler = async (event, context) => {
   }
 
   // Required to parse multipart form data
-  const form = formidable({ multiples: false });
+  const form = new IncomingForm({ multiples: false });
+
 
   return new Promise((resolve, reject) => {
     form.parse(event, async (err, fields, files) => {
