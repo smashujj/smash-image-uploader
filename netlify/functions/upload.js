@@ -44,11 +44,12 @@ exports.handler = async (event) => {
       statusCode: 200,
       body: JSON.stringify({ url: uploadResult.secure_url }),
     };
-  } catch (err) {
-    console.error("Upload failed", err);
+    } catch (err) {
+    console.error("Upload failed", err); // This line is good
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to upload image" }),
+      body: JSON.stringify({ error: "Failed to upload image", details: err.message || err.toString() }),
     };
   }
+
 };
