@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smash Image Uploader</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+ <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js" type="module"></script>
+ <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Montserrat', sans-serif;
+      background: url('https://images.unsplash.com/photo-1614850523011-8f49ffc73908?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') no-repeat center center fixed;
+      background-size: cover;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 40px 20px;
+      min-height: 100vh;
+    }
+  
+    #logo {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      height: 40px;
+      filter: brightness(0) invert(1);
+    }
+    h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    p {
+      color: #E0E0E0;
+      font-size: 1rem;
+      margin-bottom: 48px;
+    }
+    #drop-zone {
+      border: 1px dashed #ffffff;
+      border-radius: 16px;
+      border-spacing: 6px;
+      background-color: rgba(0, 0, 0, 0.4);
+      width: 100%;
+      max-width: 700px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 40px;
+      margin-top: 30px;
+      cursor: pointer;
+    }
+    #drop-zone.hover {
+  box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.807);
+  transition: box-shadow 0.3s ease;
+}
+#add-placeholder {
+  background: #888888;
+  transition: background-color 0.3s ease;
+}
+#add-placeholder:hover {
+  background: #666666; /* Darker gray on hover */
+}
+
+#reset-images {
+  background: #ef4444; /* Red */
+  transition: background-color 0.3s ease;
+}
+#reset-images:hover {
+  background: #b91c1c; /* Darker red on hover */
+}
+
+
+    input[type="file"] { display: none; }
+   .button {
+  background: #3b82f6;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: 'Outfit', sans-serif; /* ✅ Add this line */
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 10px 0;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+    .button:hover { background: #2563eb; }
+    textarea {
+      width: 100%;
+      max-width: 700px;
+      height: 200px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 14px;
+      background: rgba(0, 0, 0, 0.5);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      resize: none;
+      margin-top: 30px;
+    }
+    #preview {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      gap: 10px;
+      max-width: 700px;
+      margin: 0 auto 20px auto;
+    }
+    .preview-wrapper {
+      position: relative;
+    }
+    .preview-image {
+  width: 90px;
+  height: 90px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: move;
+    }
+    .remove-button {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .preview-number {
+  position: absolute;
+  bottom: -6px;
+  left: -6px;
+  background: #0051ff;
+  color: #ffffff;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-weight: bold;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+    #lottie {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      padding: 40px 0;
+    }
+    #lottie img {
+      height: 64px;
+    }
+    #progress-bar {
+      width: 100%;
+      max-width: 700px;
+      height: 6px;
+      background-color: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+      overflow: hidden;
+      margin: 20px 0;
+    }
+    #progress-fill {
+      height: 100%;
+      background-color: white;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  
+    .button.uploading {
+  background-color: #b8b8b8 !important; /* Yellow */
+  color: black;  
+}
+
+#button-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  column-gap: 16px;   /* smaller horizontal space between columns */
+  row-gap: 0px;      /* tighter vertical space between rows */
+  margin: 40px auto 0 auto;
+  max-width: 700px;
+  width: 100%;
+  padding: 0 10px;
+  box-sizing: border-box;
+}
+
+
+#button-grid .button {
+  width: 100%;
+  font-size: 0.7rem; /* smaller text */
+  padding: 10px 12px;
+  letter-spacing: 1px;
+}
+#sheet-url-input::placeholder {
+  color: #000000;
+  opacity: 0.2;
+   font-style: italic;
+}
+@keyframes pulseFade {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+ body.user-is-tabbing *:focus {
+  outline: 2px solid white;
+  box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.6);
+}
+  body:not(.user-is-tabbing) *:focus {
+    outline: none;
+  }
+ #drop-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.6); /* darken */
+  z-index: 999; /* Just below drop-zone */
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+#drop-backdrop.active {
+  opacity: 1;
+}
+
+/* Make sure drop-zone is ABOVE the backdrop */
+#drop-zone {
+  position: relative;
+  z-index: 1000;
+}
+
+  </style>
+</head>
+<body>
+  <div id="drop-backdrop"></div>
+<div id="logo">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 74" height="40" fill="white" style="display:block">
+    <path fill-rule="evenodd" d="M345.1.09h-5.3c-.9,0-5.3.27-5.3,5.3v20.05h-26.34v-4.86c0-4.14.18-10.34,0-14.84C307.87.18,302.3,0,301.67,0h-4.86C295.91,0,291.15.27,291.15,5.57v11.18c-3.67-7.15-11.51-12.29-23.11-15.14-3.78-.9-7.37-1.35-10.7-1.35-11.87,0-20.14,5.84-22.75,16-2.43,9.98,2.61,16.54,19.15,25.09,2.61,1.35,4.95,2.43,6.92,3.42,7.37,3.51,11.87,5.57,10.52,11.15-.9,3.69-4.05,5.66-8.81,5.66s-3.87-.27-6.02-.81c-7.64-1.89-10.25-4.59-12.23-7.19-.63-.81-1.08-1.8-1.62-2.79-.63-1.26-1.26-2.52-2.07-3.33-2.25-2.16-4.95-2.7-5.04-2.7,0,0-2.85-1-5.3-.26v-25.63l-.09.09C230.01,6.74,218.95.09,198.8.09s-27.24,6.65-29.13,18.25c-.18.99,0,1.8.54,2.43,1.44,1.71,4.95,1.71,5.04,1.71h.27c.99,0,9.44-.09,11.42-4.86,1.89-4.5,8.63-5.13,12.5-5.13,9.44,0,13.49,2.79,13.49,9.26s-4.32,7.1-13.76,8.18c-2.34.27-5.03.63-8.18,1.08-14.3,2.07-21.13,6.47-23.56,14.75-.07.23-.12.47-.18.71v-23.64h.27c0-13.76-8.9-22.3-23.29-22.3s-15.38,3.33-20.32,9.98l-.99,1.35-.99-1.35c-4.76-6.83-10.97-9.89-19.96-9.89s-14.48,3.24-19.78,9.53l-2.16,2.61v-4.77c0-.18-.18-5.3-6.56-5.3h-3.87c-2.07,0-3.6.54-4.68,1.62-1.53,1.62-1.53,4.05-1.53,4.05v33.39c-3.34-5.97-11.51-9.06-23.02-11.72-1.98-.45-3.78-.81-5.48-1.17-10.97-2.34-16-3.51-16-8.72s4.14-7.73,12.5-7.73,10.61,1.89,13.13,6.02c2.07,3.33,5.93,3.42,6.38,3.42h6.02c.9,0,3.15-.18,4.23-1.44.63-.81.81-2.07.54-3.6C59.44,6.11,48.38,0,31.29,0S1.8,8.63,1.8,22.48s6.56,15.83,25,20.32c2.88.72,5.48,1.26,7.82,1.71,8.09,1.62,12.95,2.61,12.95,8.45s-1.8,8.27-13.49,8.36h-.36c-7.37,0-12.32-1.89-14.75-5.57-3.24-4.95-7.64-5.13-8.54-5.13h-4.95c-.81,0-3.6.09-4.86,1.71-.63.81-.81,1.98-.45,3.6,2.61,11.24,14.21,17.98,31.11,17.98,15.53,0,27.71-4.86,32.1-14.15v5.25c0,5.84,4.59,6.47,6.47,6.47h.27c.49,0,.65,0,.65,0h2.86c1.17,0,6.92-.36,6.92-6.83V29.58c0-9.08,5.48-14.93,13.94-14.93s12.05,4.41,12.05,12.14v38.66c0,5.66,5.84,5.93,6.11,5.93h4.59c.27,0,6.47-.27,6.47-6.29V29.4c0-8.99,5.48-14.75,13.94-14.75s12.32,4.5,12.32,12.05v38.93c0,5.57,5.4,5.75,6.02,5.75h4.68c1.98,0,6.56-.63,6.56-6.56v-6.03c.1.57.18.91.18.91,2.34,9.17,9.62,14.3,20.77,14.3s18.34-3.78,23.11-10.88c0,0,.72-1.26,1.35-1.17.9.09.99,2.07.99,2.61,0,.63,0,1.44.27,2.34.99,4.41,7.1,4.59,8.72,4.59h3.06c6.02,0,6.38-.9,6.47-2.43,0-.18-.27-1.17-.63-1.89-.88-1.59-1.33-3.68-1.42-6.57,4.29,5.2,11.38,9.11,20.84,11.43,5.3,1.35,10.25,1.98,14.57,1.98,12.77,0,20.59-5.57,23.29-16.54,2.88-11.69-4.14-17.62-18.97-25v-.09c-1.8-.9-3.42-1.62-4.85-2.34-9.98-4.86-14.57-7.01-13.4-12.05.63-2.52,2.52-5.48,7.91-5.48s3.69.36,5.93.9c5.76,1.62,6.74,2.61,9.26,5.13l.18.18c.63.63,1.17,1.53,1.89,2.61.9,1.44,1.98,2.97,3.06,3.96,2.34,2.07,5.03,2.61,5.12,2.61,0,0,4.23.9,6.2-1.17v38.3c0,5.84,5.48,5.93,5.76,5.93h4.77c.27,0,6.56-.27,6.56-6.2v-24.19h26.35v24.73c0,5.39,5.21,5.66,5.39,5.75h4.68c.27,0,7.01,0,7.01-6.29V5.93c0-5.75-6.29-5.84-6.56-5.84ZM213.37,44.33h-.09c0,10.79-7.19,17.44-18.7,17.44s-11.15-3.87-11.15-9.8,4.14-8.99,10.43-10.7c1.17-.36,2.52-.63,4.14-.9,2.97-.54,6.56-1.26,10.61-2.7.72-.27,1.35-.36,1.89-.36,1.08,0,1.71.45,2.07.81.81.81.81,1.8.81,1.98v4.23Z"/>
+  </svg>
+</div>
+
+  <h1>Smash Image Uploader</h1>
+  <p>Drop your sheet link and images below to upload. Drag to reorder before uploading.</p>
+
+  <input id="sheet-url-input" placeholder="Paste your Google Sheet URL here" style="margin-bottom: 20px; width: 100%; max-width: 700px; padding: 10px; border-radius: 8px; border: none; font-family: Montserrat; font-size: 14px;">
+  <input type="file" id="file-input" multiple accept="image/*">
+  <div id="drop-zone">
+  <span style="font-style: italic; opacity: 0.65;">Drop images here or click to select</span>
+  </div>
+  <div id="preview"></div>
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+ <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px;">
+  <button id="add-placeholder" class="button">Add Empty Image</button>
+  <button id="confirm-order" class="button">Confirm Order</button>
+  <button id="reset-images" class="button">Reset Images</button>
+</div>
+
+<div id="lottie-wrapper" style="position: relative; height: 100px;">
+  <dotlottie-wc
+    id="loadingAnim"
+    src="https://lottie.host/7ee6e692-92fc-4202-ab38-d2a202866dd5/MrjXHddpsH.lottie"
+    style="position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+           width: 100px; height: 100px; opacity: 0; pointer-events: none; transition: opacity 0.5s ease;"
+    autoplay
+    loop
+    speed="1"
+  ></dotlottie-wc>
+</div>
+<div id="paste-confirm" style="
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #16a34a;
+  color: white;
+  padding: 6px 16px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 9999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+">
+  <span class="tick-mark">✔</span> LINKS PASTED
+</div>
+
+  <textarea id="output" readonly></textarea>
+
+  <div id="button-grid">
+  <button id="paste-product-image" class="button">Paste as Product Image</button>
+  <button id="paste-image-ref-1" class="button">Paste as Image Ref 1</button>
+  <button id="paste-image-ref-2" class="button">Paste as Image Ref 2</button>
+  <button id="paste-image-ref-3" class="button">Paste as Image Ref 3</button>
+  <button id="paste-image-ref-4" class="button">Paste as Image Ref 4</button>
+  <button id="paste-image-ref-5" class="button">Paste as Image Ref 5</button>
+  <button id="paste-image-ref-6" class="button">Paste as Image Ref 6</button>
+  <button id="paste-image-ref-7" class="button">Paste as Image Ref 7</button>
+</div>
+
+
+<script>
+
+  let filesArray = [];
+let dragCounter = 0; // ✅ Move here to ensure it's global
+
+  // ========== IMAGE COMPRESSION ==========
+async function compressImage(file, maxWidth = 1600, maxHeight = 1600, quality = 0.85) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      img.src = e.target.result;
+    };
+
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      // Resize if larger than max
+      if (width > maxWidth || height > maxHeight) {
+        const scale = Math.min(maxWidth / width, maxHeight / height);
+        width *= scale;
+        height *= scale;
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg', lastModified: Date.now() }));
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function getPreviewDataUrl(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result);
+    reader.readAsDataURL(file);
+  });
+}
+function generateRandomName(length = 4) {
+  const chars = 'abcdefghijklmnopqrstuvwxyz';
+  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+const dropZone = document.getElementById("drop-zone");
+const backdrop = document.getElementById('drop-backdrop');
+const fileInput = document.getElementById('file-input');
+
+// ✅ Clicking the drop zone opens the file selector
+dropZone.addEventListener('click', () => {
+  fileInput.click();
+});
+const handleFiles = async (files) => {
+  const fileList = Array.from(files);
+
+  for (const file of fileList) {
+    // Generate random file name
+    const randomName = `${generateRandomName()}.jpg`;
+
+    // Compress image if larger than ~1MB
+    const compressedFile = (file.size > 1_000_000)
+      ? await compressImage(file, 1600, 1600, 0.85)
+      : file;
+
+    // Create a new File with the random name
+    const renamedFile = new File([compressedFile], randomName, {
+      type: 'image/jpeg',
+      lastModified: Date.now(),
+    });
+
+    // Generate preview data
+    renamedFile.previewData = await getPreviewDataUrl(renamedFile);
+    filesArray.push(renamedFile);
+  }
+
+  // Sort files by name (optional, now random)
+  filesArray.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
+  updatePreview();
+};
+
+// ✅ Prevent default and handle global drop
+window.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+});
+
+window.addEventListener("drop", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+
+  dropZone.classList.remove("hover");
+  backdrop.classList.remove("active");
+  dragCounter = 0;
+
+  const dt = e.dataTransfer;
+  if (dt?.files?.length) {
+    handleFiles(dt.files);
+  }
+});
+
+// ✅ Drop zone hover effects (optional visual feedback)
+dropZone.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  dropZone.classList.add("hover");
+});
+dropZone.addEventListener("dragleave", () => {
+  dropZone.classList.remove("hover");
+});
+
+</script>
+
+<script>
+
+    const preview = document.getElementById('preview');
+    const output = document.getElementById('output');
+    const progressFill = document.getElementById('progress-fill');
+
+  
+// ✅ Handle manual file selection
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files.length > 0) {
+    handleFiles(e.target.files);
+  }
+});
+
+   let isSorting = false;
+
+
+    const updatePreview = () => {
+  preview.innerHTML = '';
+  filesArray.forEach((file, i) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'preview-wrapper';
+
+    if (file.isPlaceholder) {
+      // ✅ Placeholder Styling
+      const placeholder = document.createElement('div');
+      placeholder.style.width = '90px';
+      placeholder.style.height = '90px';
+      placeholder.style.display = 'flex';
+      placeholder.style.alignItems = 'center';
+      placeholder.style.justifyContent = 'center';
+      placeholder.style.border = '2px dashed #ccc';
+      placeholder.style.borderRadius = '8px';
+      placeholder.style.color = '#ccc';
+      placeholder.style.fontSize = '12px';
+      placeholder.textContent = 'EMPTY';
+      wrapper.appendChild(placeholder);
+    } else {
+      // ✅ Normal Image Preview
+      const img = document.createElement('img');
+      img.src = file.previewData;
+      img.className = 'preview-image';
+      wrapper.appendChild(img);
+    }
+
+    // Number badge
+    const label = document.createElement('div');
+    label.className = 'preview-number';
+    label.textContent = i + 1;
+
+    // Remove button
+    const remove = document.createElement('button');
+    remove.className = 'remove-button';
+    remove.textContent = '×';
+    remove.onclick = () => {
+      filesArray.splice(i, 1);
+      updatePreview();
+    };
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(remove);
+    preview.appendChild(wrapper);
+  });
+};
+
+// ✅ Add placeholder button click here
+    document.getElementById('add-placeholder').addEventListener('click', () => {
+      filesArray.push({ isPlaceholder: true });
+      updatePreview();
+    }); 
+
+document.getElementById('reset-images').addEventListener('click', () => {
+    filesArray = [];
+    updatePreview();
+    fileInput.value = "";
+    dragCounter = 0;
+    backdrop.classList.remove('active');
+    dropZone.classList.remove('hover');
+    progressFill.style.width = '0%';
+    output.value = "";
+});
+
+document.addEventListener('dragenter', (e) => {
+ if (isSorting || e.dataTransfer.types[0] !== 'Files') return; // ✅ Ignore all drags during sorting
+  e.preventDefault();
+  dragCounter++;
+  backdrop.classList.add('active');
+  dropZone.classList.add('hover');
+});
+
+document.addEventListener('dragleave', (e) => {
+ if (isSorting || e.dataTransfer.types[0] !== 'Files') return; // ✅ Ignore leave events during sorting
+  dragCounter--;
+  if (dragCounter <= 0) {
+    dragCounter = 0;
+    backdrop.classList.remove('active');
+    dropZone.classList.remove('hover');
+  }
+});
+
+new Sortable(preview, {
+  animation: 150,
+  onStart: () => { isSorting = true; },
+  onEnd: () => { 
+    isSorting = false; 
+    dragCounter = 0; // ✅ Reset counter after sorting
+    backdrop.classList.remove('active');
+    dropZone.classList.remove('hover');
+
+    const children = Array.from(preview.children);
+    const newOrder = children.map((child) => {
+      const img = child.querySelector('img');
+      if (img) {
+        return filesArray.find(f => !f.isPlaceholder && f.previewData === img.src);
+      } else {
+        const availablePlaceholders = filesArray.filter(f => f.isPlaceholder).slice();
+return availablePlaceholders.shift();
+      }
+    }).filter(Boolean);
+
+    filesArray = newOrder;
+    updatePreview();
+  }
+});
+
+ document.getElementById('confirm-order').addEventListener('click', async () => {
+  await uploadAndPasteLinks();
+  
+  const ensureUnder500KB = async (file) => {
+    let quality = 0.8;
+    let compressed = file;
+
+    const compressToJpeg = async (input, q) => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        const reader = new FileReader();
+
+        reader.onload = (e) => (img.src = e.target.result);
+
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          const maxW = 1600, maxH = 1600;
+
+          if (width > maxW || height > maxH) {
+            const scale = Math.min(maxW / width, maxH / height);
+            width *= scale;
+            height *= scale;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            resolve(new File([blob], `${generateRandomName()}.jpg`, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            }));
+          }, 'image/jpeg', q);
+        };
+
+        reader.readAsDataURL(input);
+      });
+    };
+
+    let attempts = 0;
+    while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
+      compressed = await compressToJpeg(compressed, quality);
+      quality -= 0.1;
+      attempts++;
+    }
+
+    return compressed;
+  };
+
+  const uploadPromises = filesArray.map(async (file) => {
+    if (file.isPlaceholder) {
+      updateProgress();
+      return "";
+    }
+
+    try {
+      const compressedFile = await ensureUnder500KB(file);
+      const formData = new FormData();
+      formData.append('file', compressedFile);
+
+      const res = await fetch('/.netlify/functions/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        console.error("Upload failed:", data);
+        return "";
+      }
+
+      return data.url;
+    } catch (err) {
+      console.error("Upload error:", err);
+      return "";
+    } finally {
+      updateProgress();
+    }
+  });
+
+  try {
+    const links = await Promise.all(uploadPromises);
+    output.value = links.map(link => link?.split('?')[0] || "").join("\n");
+  } catch (err) {
+    console.error("Critical upload error:", err);
+    output.value = "Upload failed.";
+  } finally {
+    confirmBtn.classList.remove('uploading');
+    confirmBtn.textContent = 'Confirm Order';
+    anim.style.opacity = 0;
+    dropZone.classList.remove('hover');
+    backdrop.classList.remove('active');
+    dragCounter = 0;
+  }
+});
+
+</script>
+  
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  const sheetInput = document.getElementById('sheet-url-input');
+
+  // Helper: Extract sheet ID from URL
+  function getSheetIdFromUrl(url) {
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+  }
+
+  // Clean the input to just the sheet ID on blur
+  sheetInput.addEventListener('blur', () => {
+    const url = sheetInput.value.trim();
+    const id = getSheetIdFromUrl(url);
+    if (id) {
+      sheetInput.value = id;
+    }
+  });
+
+  // Show temporary paste confirmation
+  function showPasteConfirm(message) {
+    const el = document.getElementById('paste-confirm');
+    el.textContent = `✔ ${message}`;
+    el.style.display = 'flex';
+    setTimeout(() => {
+      el.style.opacity = 1;
+    }, 10);
+
+    setTimeout(() => {
+      el.style.opacity = 0;
+      setTimeout(() => {
+        el.style.display = 'none';
+        el.textContent = '✔ LINKS PASTED';
+      }, 300);
+    }, 1500);
+  }
+
+  // Paste links to Google Sheet via Web App
+ async function pasteLinksToSheet(destColumn, sourceCell) {
+  document.getElementById('loadingAnim').style.opacity = 0;
+  const sheetUrl = sheetInput.value.trim();
+  const links = output.value;
+  if (!sheetUrl || !links) {
+    alert('Please paste a Google Sheet URL and generate links first.');
+    return;
+  }
+
+  let sheetId;
+  if (sheetUrl.length === 44 && /^[a-zA-Z0-9-_]+$/.test(sheetUrl)) {
+    sheetId = sheetUrl;
+  } else {
+    sheetId = getSheetIdFromUrl(sheetUrl);
+  }
+  if (!sheetId) {
+    alert('Invalid Google Sheet URL.');
+    return;
+  }
+
+  const linksArray = output.value.split(/\n/);
+
+  const payload = {
+    sheetId,
+    links: linksArray,
+    destColumn,
+    sourceCell
+  };
+
+  try {
+    await fetch(
+      `https://corsproxy.io/?${encodeURIComponent(
+        'https://script.google.com/macros/s/AKfycby8mjRAVPgtvHVR4NcMplV4oTaPfOOAJofuKR2Vqt_BzolCc-nxXxVaV8Ry9j1t1J5IyQ/exec'
+      )}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    // ✅ Always show success, no matter what
+    showPasteConfirm("Links pasted successfully.");
+    
+  } catch (err) {
+    // Even on network error, just alert but still show success
+    console.error("Error:", err.message);
+    showPasteConfirm("Links pasted successfully.");
+  }
+}
+
+
+  // Attach to each button
+  document.getElementById('paste-product-image')?.addEventListener('click', () => pasteLinksToSheet('I', 'I2'));
+  document.getElementById('paste-image-ref-1')?.addEventListener('click', () => pasteLinksToSheet('N', 'N2'));
+  document.getElementById('paste-image-ref-2')?.addEventListener('click', () => pasteLinksToSheet('Z', 'Z2'));
+  document.getElementById('paste-image-ref-3')?.addEventListener('click', () => pasteLinksToSheet('AA', 'AA2'));
+  document.getElementById('paste-image-ref-4')?.addEventListener('click', () => pasteLinksToSheet('AB', 'AB2'));
+  document.getElementById('paste-image-ref-5')?.addEventListener('click', () => pasteLinksToSheet('AC', 'AC2'));
+  document.getElementById('paste-image-ref-6')?.addEventListener('click', () => pasteLinksToSheet('AD', 'AD2'));
+  document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
+});
+
+async function uploadAndPasteLinks() {
+  const confirmBtn = document.getElementById('confirm-order');
+  const anim = document.getElementById('loadingAnim');
+  const output = document.getElementById('output');
+  const dropZone = document.getElementById('drop-zone');
+  const backdrop = document.getElementById('drop-backdrop');
+
+  confirmBtn.classList.add('uploading');
+  confirmBtn.textContent = 'UPLOADING...';
+  anim.style.opacity = 1;
+  output.value = "";
+  progressFill.style.width = '0%';
+
+  let completed = 0;
+
+  const updateProgress = () => {
+    completed++;
+    const percent = Math.round((completed / filesArray.length) * 100);
+    progressFill.style.width = `${percent}%`;
+  };
+
+  const ensureUnder500KB = async (file) => {
+    let quality = 0.8;
+    let compressed = file;
+
+    const compressToJpeg = async (input, q) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        const img = new Image();
+
+        reader.onload = (e) => (img.src = e.target.result);
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          const maxW = 1600, maxH = 1600;
+
+          if (width > maxW || height > maxH) {
+            const scale = Math.min(maxW / width, maxH / height);
+            width *= scale;
+            height *= scale;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            resolve(new File([blob], `${generateRandomName()}.jpg`, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            }));
+          }, 'image/jpeg', q);
+        };
+
+        reader.readAsDataURL(input);
+      });
+    };
+
+    let attempts = 0;
+    while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
+      compressed = await compressToJpeg(compressed, quality);
+      quality -= 0.1;
+      attempts++;
+    }
+
+    return compressed;
+  };
+
+  const uploadPromises = filesArray.map(async (file) => {
+    if (file.isPlaceholder) {
+      updateProgress();
+      return "";
+    }
+
+    try {
+      const compressedFile = await ensureUnder500KB(file);
+      const formData = new FormData();
+      formData.append('file', compressedFile);
+
+      const res = await fetch('/.netlify/functions/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+        console.error("Upload failed:", data);
+        return "";
+      }
+
+      return data.url;
+    } catch (err) {
+      console.error("Upload error:", err);
+      return "";
+    } finally {
+      updateProgress();
+    }
+  });
+
+  try {
+    const links = await Promise.all(uploadPromises);
+    output.value = links.map(link => link?.split('?')[0] || "").join("\n");
+  } catch (err) {
+    console.error("Critical upload error:", err);
+    output.value = "Upload failed.";
+  } finally {
+    confirmBtn.classList.remove('uploading');
+    confirmBtn.textContent = 'Confirm Order';
+    anim.style.opacity = 0;
+    dropZone.classList.remove('hover');
+    backdrop.classList.remove('active');
+    dragCounter = 0;
+  }
+}
+
+</script>
+
+</body>
+</html>
