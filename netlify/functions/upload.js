@@ -1,4 +1,5 @@
 const cloudinary = require("cloudinary").v2;
+const Busboy = require("busboy");
 
 // Cloudinary config
 cloudinary.config({
@@ -7,7 +8,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
   if (event.httpMethod !== "POST") {
     return {
       statusCode: 405,
@@ -15,44 +16,59 @@ exports.handler = async (event) => {
     };
   }
 
-  try {
-    const contentType = event.headers["content-type"] || event.headers["Content-Type"];
-    const boundary = contentType.split("boundary=")[1];
-
-    const bodyBuffer = Buffer.from(event.body, "base64");
-    const parts = bodyBuffer.toString().split(`--${boundary}`);
-
-    const filePart = parts.find(part => part.includes("filename="));
-    const contentTypeLine = filePart.split("\r\n")[1];
-    const fileType = contentTypeLine.split(": ")[1];
-
-    const fileData = filePart.split("\r\n\r\n")[1].split("\r\n")[0];
-    const fileBuffer = Buffer.from(fileData, "binary");
-
-    const uploadResult = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { resource_type: "image" },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-      stream.end(fileBuffer);
+  return new Promise((resolve, reject) => {
+    const busboy = new Busboy({
+      headers: {
+        "content-type": event.headers["content-type"] || event.headers["Content-Type"],
+      },
     });
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ url: uploadResult.secure_url }),
-    };
-  } catch (uploadErr) {
-    console.error("Cloudinary upload error:", uploadErr);
+    let fileBuffer = Buffer.alloc(0);
+    let fileUploaded = false;
 
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        error: "Upload to Cloudinary failed",
-        details: uploadErr.message || uploadErr.toString() || "Unknown error"
-      }),
-    };
-  }
+    busboy.on("file", (fieldname, file, filename, encoding, mimetype) => {
+      file.on("data", (data) => {
+        fileBuffer = Buffer.concat([fileBuffer, data]);
+      });
+
+      file.on("end", () => {
+        fileUploaded = true;
+      });
+    });
+
+    busboy.on("finish", () => {
+      if (!fileUploaded) {
+        return resolve({
+          statusCode: 400,
+          body: JSON.stringify({ error: "No file uploaded" }),
+        });
+      }
+
+      const uploadStream = cloudinary.uploader.upload_stream(
+        { resource_type: "image" },
+        (err, result) => {
+          if (err) {
+            console.error("Cloudinary error:", err);
+            return resolve({
+              statusCode: 500,
+              body: JSON.stringify({
+                error: "Cloudinary upload failed",
+                details: err.message,
+              }),
+            });
+          }
+
+          return resolve({
+            statusCode: 200,
+            body: JSON.stringify({ url: result.secure_url }),
+          });
+        }
+      );
+
+      uploadStream.end(fileBuffer);
+    });
+
+    const bodyBuffer = Buffer.from(event.body, "base64");
+    busboy.end(bodyBuffer);
+  });
 };
