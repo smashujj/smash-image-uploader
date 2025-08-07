@@ -1,5 +1,5 @@
 {
-  "name": "6.0",
+  "name": "smash-image-uploader",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,6 +9,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": "18.x"
+  },
   "devDependencies": {
     "netlify-cli": "^23.1.1"
   },
