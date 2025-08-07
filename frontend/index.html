@@ -654,7 +654,7 @@ return availablePlaceholders.shift();
     const links = await Promise.all(uploadPromises);
     output.value = links.map(link => link?.split('?')[0] || "").join("\n");
   } catch (err) {
-    console.error("Critical upload error:", err);
+    console.error("Upload failed:", JSON.stringify(data, null, 2));
     output.value = "Upload failed.";
   } finally {
     confirmBtn.classList.remove('uploading');
