@@ -657,9 +657,10 @@ confirmBtn.addEventListener('click', async () => {
     const links = await Promise.all(uploadPromises);
     output.value = links.map(link => link?.split('?')[0] || "").join("\n");
   } catch (err) {
-    console.error("Upload failed:", JSON.stringify(data, null, 2));
-    output.value = "Upload failed.";
-  } finally {
+  console.error("Upload failed:", err);
+  output.value = "Upload failed.";
+}
+  finally {
     confirmBtn.classList.remove('uploading');
     confirmBtn.textContent = 'Confirm Order';
     anim.style.opacity = 0;
