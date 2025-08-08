@@ -564,7 +564,10 @@ return availablePlaceholders.shift();
   }
 });
 
- document.getElementById('confirm-order').addEventListener('click', async () => {
+ const confirmBtn = document.getElementById('confirm-order');
+
+confirmBtn.addEventListener('click', async () => {
+
   await uploadAndPasteLinks();
   
   const ensureUnder500KB = async (file) => {
@@ -665,7 +668,6 @@ return availablePlaceholders.shift();
     dragCounter = 0;
   }
 });
-
 </script>
   
 <script>
