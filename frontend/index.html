@@ -671,7 +671,6 @@ return availablePlaceholders.shift();
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   const sheetInput = document.getElementById('sheet-url-input');
-  const confirmBtn = document.getElementById('confirm-order');
   const anim = document.getElementById('loadingAnim');
   const output = document.getElementById('output');
   const dropZone = document.getElementById('drop-zone');
@@ -691,6 +690,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // 📤 Upload + Paste Function
   // -----------------------------
   async function uploadAndPasteLinks() {
+    const confirmBtn = document.getElementById('confirm-order');
     if (!confirmBtn) return console.error("Confirm button not found");
 
     confirmBtn.classList.add('uploading');
