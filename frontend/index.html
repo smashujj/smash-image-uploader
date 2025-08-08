@@ -687,6 +687,9 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+document.getElementById('confirm-order')
+.addEventListener('click', uploadAndPasteLinks);
+
 async function uploadAndPasteLinks() {
   const confirmBtn = document.getElementById('confirm-order');
   const anim = document.getElementById('loadingAnim');
@@ -879,7 +882,7 @@ async function uploadAndPasteLinks() {
     showPasteConfirm("Links pasted successfully.");
   }
 }
-document.getElementById('confirm-order').addEventListener('click', uploadAndPasteLinks);
+
 // Attach to each button
   document.getElementById('paste-product-image')?.addEventListener('click', () => pasteLinksToSheet('I', 'I2'));
   document.getElementById('paste-image-ref-1')?.addEventListener('click', () => pasteLinksToSheet('N', 'N2'));
