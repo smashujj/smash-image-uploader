@@ -671,27 +671,25 @@ return availablePlaceholders.shift();
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   const sheetInput = document.getElementById('sheet-url-input');
+  const confirmBtn = document.getElementById('confirm-order');
   const anim = document.getElementById('loadingAnim');
   const output = document.getElementById('output');
   const dropZone = document.getElementById('drop-zone');
   const backdrop = document.getElementById('drop-backdrop');
 
-  // -----------------------------
-  // 🔁 Clean Sheet URL on blur
-  // -----------------------------
+  function getSheetIdFromUrl(url) {
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+  }
+
   sheetInput.addEventListener('blur', () => {
-    const match = sheetInput.value.trim().match(/\/d\/([a-zA-Z0-9-_]+)/);
-    if (match) {
-      sheetInput.value = match[1];
-    }
+    const url = sheetInput.value.trim();
+    const id = getSheetIdFromUrl(url);
+    if (id) sheetInput.value = id;
   });
 
-  // -----------------------------
-  // 📤 Upload + Paste Function
-  // -----------------------------
-  async function uploadAndPasteLinks() {
-    const confirmBtn = document.getElementById('confirm-order');
-    if (!confirmBtn) return console.error("Confirm button not found");
+  confirmBtn?.addEventListener('click', async function uploadAndPasteLinks() {
+    if (!confirmBtn) return;
 
     confirmBtn.classList.add('uploading');
     confirmBtn.textContent = 'UPLOADING...';
@@ -710,24 +708,28 @@ window.addEventListener('DOMContentLoaded', () => {
       let quality = 0.8;
       let compressed = file;
 
-      const compressToJpeg = (input, q) =>
-        new Promise((resolve) => {
+      const compressToJpeg = async (input, q) => {
+        return new Promise((resolve) => {
           const reader = new FileReader();
           const img = new Image();
+
           reader.onload = (e) => (img.src = e.target.result);
           img.onload = () => {
             const canvas = document.createElement('canvas');
             let { width, height } = img;
             const maxW = 1600, maxH = 1600;
+
             if (width > maxW || height > maxH) {
               const scale = Math.min(maxW / width, maxH / height);
               width *= scale;
               height *= scale;
             }
+
             canvas.width = width;
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
+
             canvas.toBlob((blob) => {
               resolve(new File([blob], `${generateRandomName()}.jpg`, {
                 type: 'image/jpeg',
@@ -735,8 +737,10 @@ window.addEventListener('DOMContentLoaded', () => {
               }));
             }, 'image/jpeg', q);
           };
+
           reader.readAsDataURL(input);
         });
+      };
 
       let attempts = 0;
       while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
@@ -744,6 +748,7 @@ window.addEventListener('DOMContentLoaded', () => {
         quality -= 0.1;
         attempts++;
       }
+
       return compressed;
     };
 
@@ -752,19 +757,24 @@ window.addEventListener('DOMContentLoaded', () => {
         updateProgress();
         return "";
       }
+
       try {
         const compressedFile = await ensureUnder500KB(file);
         const formData = new FormData();
         formData.append("image", compressedFile);
+
         const res = await fetch('/.netlify/functions/upload', {
           method: 'POST',
           body: formData,
         });
+
         const data = await res.json();
+
         if (!res.ok || !data.url) {
           console.error("Upload failed:", JSON.stringify(data, null, 2));
           return "";
         }
+
         return data.url;
       } catch (err) {
         console.error("Upload error:", err);
@@ -788,26 +798,15 @@ window.addEventListener('DOMContentLoaded', () => {
       backdrop.classList.remove('active');
       dragCounter = 0;
     }
-  }
+  });
 
-  // -----------------------------
-  // ✅ Hook up event listener
-  // -----------------------------
-  confirmBtn?.addEventListener('click', uploadAndPasteLinks);
-
-  // -----------------------------
-  // 🧠 Make available on window if needed
-  // -----------------------------
-  window.uploadAndPasteLinks = uploadAndPasteLinks;
-
-  // -----------------------------
-  // 📥 Paste to Sheet Helpers
-  // -----------------------------
   function showPasteConfirm(message) {
     const el = document.getElementById('paste-confirm');
     el.textContent = `✔ ${message}`;
     el.style.display = 'flex';
-    setTimeout(() => el.style.opacity = 1, 10);
+    setTimeout(() => {
+      el.style.opacity = 1;
+    }, 10);
     setTimeout(() => {
       el.style.opacity = 0;
       setTimeout(() => {
@@ -822,11 +821,19 @@ window.addEventListener('DOMContentLoaded', () => {
     const sheetUrl = sheetInput.value.trim();
     const links = output.value;
 
-    if (!sheetUrl || !links) return alert('Please paste a Google Sheet URL and generate links first.');
-    const match = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    const sheetId = match ? match[1] : /^[a-zA-Z0-9-_]{44}$/.test(sheetUrl) ? sheetUrl : null;
+    if (!sheetUrl || !links) {
+      alert('Please paste a Google Sheet URL and generate links first.');
+      return;
+    }
 
-    if (!sheetId) return alert('Invalid Google Sheet URL.');
+    const sheetId = (sheetUrl.length === 44 && /^[a-zA-Z0-9-_]+$/.test(sheetUrl))
+      ? sheetUrl
+      : getSheetIdFromUrl(sheetUrl);
+
+    if (!sheetId) {
+      alert('Invalid Google Sheet URL.');
+      return;
+    }
 
     const payload = {
       sheetId,
@@ -845,16 +852,12 @@ window.addEventListener('DOMContentLoaded', () => {
       });
 
       showPasteConfirm("Links pasted successfully.");
-
     } catch (err) {
       console.error("Error:", err.message);
       showPasteConfirm("Links pasted successfully.");
     }
   }
 
-  // -----------------------------
-  // 🧷 Paste buttons
-  // -----------------------------
   document.getElementById('paste-product-image')?.addEventListener('click', () => pasteLinksToSheet('I', 'I2'));
   document.getElementById('paste-image-ref-1')?.addEventListener('click', () => pasteLinksToSheet('N', 'N2'));
   document.getElementById('paste-image-ref-2')?.addEventListener('click', () => pasteLinksToSheet('Z', 'Z2'));
