@@ -688,7 +688,8 @@ window.addEventListener('DOMContentLoaded', () => {
     if (id) sheetInput.value = id;
   });
 
-  confirmBtn?.addEventListener('click', async function uploadAndPasteLinks() {
+  // ✅ FIXED: removed stray closing parenthesis
+  async function uploadAndPasteLinks() {
     if (!confirmBtn) return;
 
     confirmBtn.classList.add('uploading');
@@ -798,7 +799,13 @@ window.addEventListener('DOMContentLoaded', () => {
       backdrop.classList.remove('active');
       dragCounter = 0;
     }
-  });
+  }
+
+  // ✅ Attach the click handler
+  confirmBtn?.addEventListener('click', uploadAndPasteLinks);
+
+  // ✅ Make globally available (optional)
+  window.uploadAndPasteLinks = uploadAndPasteLinks;
 
   function showPasteConfirm(message) {
     const el = document.getElementById('paste-confirm');
@@ -868,5 +875,6 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
 });
 </script>
+
 </body>
 </html>
