@@ -685,135 +685,135 @@ window.addEventListener('DOMContentLoaded', () => {
     if (id) {
       sheetInput.value = id;
     }
-});
-
-document.getElementById('confirm-order')
-.addEventListener('click', uploadAndPasteLinks);
-
-async function uploadAndPasteLinks() {
-  const confirmBtn = document.getElementById('confirm-order');
-  const anim = document.getElementById('loadingAnim');
-  const output = document.getElementById('output');
-  const dropZone = document.getElementById('drop-zone');
-  const backdrop = document.getElementById('drop-backdrop');
-
- if (confirmBtn) {
-  confirmBtn.classList.add('uploading');
-  confirmBtn.textContent = 'UPLOADING...';
-} else {
-  console.error("confirmBtn not found in DOM");
-}
-  anim.style.opacity = 1;
-  output.value = "";
-  progressFill.style.width = '0%';
-
-  let completed = 0;
-
-  const updateProgress = () => {
-    completed++;
-    const percent = Math.round((completed / filesArray.length) * 100);
-    progressFill.style.width = `${percent}%`;
-  };
-
-  const ensureUnder500KB = async (file) => {
-    let quality = 0.8;
-    let compressed = file;
-
-    const compressToJpeg = async (input, q) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        const img = new Image();
-
-        reader.onload = (e) => (img.src = e.target.result);
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let { width, height } = img;
-          const maxW = 1600, maxH = 1600;
-
-          if (width > maxW || height > maxH) {
-            const scale = Math.min(maxW / width, maxH / height);
-            width *= scale;
-            height *= scale;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob((blob) => {
-            resolve(new File([blob], `${generateRandomName()}.jpg`, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            }));
-          }, 'image/jpeg', q);
-        };
-
-        reader.readAsDataURL(input);
-      });
-    };
-
-    let attempts = 0;
-    while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
-      compressed = await compressToJpeg(compressed, quality);
-      quality -= 0.1;
-      attempts++;
-    }
-
-    return compressed;
-  };
-
-  const uploadPromises = filesArray.map(async (file) => {
-    if (file.isPlaceholder) {
-      updateProgress();
-      return "";
-    }
-
-    try {
-    console.log("Uploading file:", file);
-      const compressedFile = await ensureUnder500KB(file);
-      const formData = new FormData();
-      formData.append("image", compressedFile);
-
-      const res = await fetch('/.netlify/functions/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.url) {
-  console.error("Upload failed:", JSON.stringify(data, null, 2));
-  return "";
-}
-
-      return data.url;
-    } catch (err) {
-      console.error("Upload error:", err);
-      return "";
-    } finally {
-      updateProgress();
-    }
   });
 
-  try {
-    const links = await Promise.all(uploadPromises);
-    output.value = links.map(link => link?.split('?')[0] || "").join("\n");
-  } catch (err) {
-    console.error("Critical upload error:", err);
-    output.value = "Upload failed.";
-  } finally {
-    confirmBtn.classList.remove('uploading');
-    confirmBtn.textContent = 'Confirm Order';
-    anim.style.opacity = 0;
-    dropZone.classList.remove('hover');
-    backdrop.classList.remove('active');
-    dragCounter = 0;
-  }
-}
+  // Confirm button logic
+  document.getElementById('confirm-order')
+    .addEventListener('click', uploadAndPasteLinks);
 
-  // Show temporary paste confirmation
+  async function uploadAndPasteLinks() {
+    const confirmBtn = document.getElementById('confirm-order');
+    const anim = document.getElementById('loadingAnim');
+    const output = document.getElementById('output');
+    const dropZone = document.getElementById('drop-zone');
+    const backdrop = document.getElementById('drop-backdrop');
+
+    if (confirmBtn) {
+      confirmBtn.classList.add('uploading');
+      confirmBtn.textContent = 'UPLOADING...';
+    } else {
+      console.error("confirmBtn not found in DOM");
+    }
+
+    anim.style.opacity = 1;
+    output.value = "";
+    progressFill.style.width = '0%';
+
+    let completed = 0;
+    const updateProgress = () => {
+      completed++;
+      const percent = Math.round((completed / filesArray.length) * 100);
+      progressFill.style.width = `${percent}%`;
+    };
+
+    const ensureUnder500KB = async (file) => {
+      let quality = 0.8;
+      let compressed = file;
+
+      const compressToJpeg = async (input, q) => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          const img = new Image();
+
+          reader.onload = (e) => (img.src = e.target.result);
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
+            const maxW = 1600, maxH = 1600;
+
+            if (width > maxW || height > maxH) {
+              const scale = Math.min(maxW / width, maxH / height);
+              width *= scale;
+              height *= scale;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob((blob) => {
+              resolve(new File([blob], `${generateRandomName()}.jpg`, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              }));
+            }, 'image/jpeg', q);
+          };
+
+          reader.readAsDataURL(input);
+        });
+      };
+
+      let attempts = 0;
+      while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
+        compressed = await compressToJpeg(compressed, quality);
+        quality -= 0.1;
+        attempts++;
+      }
+
+      return compressed;
+    };
+
+    const uploadPromises = filesArray.map(async (file) => {
+      if (file.isPlaceholder) {
+        updateProgress();
+        return "";
+      }
+
+      try {
+        console.log("Uploading file:", file);
+        const compressedFile = await ensureUnder500KB(file);
+        const formData = new FormData();
+        formData.append("image", compressedFile);
+
+        const res = await fetch('/.netlify/functions/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !data.url) {
+          console.error("Upload failed:", JSON.stringify(data, null, 2));
+          return "";
+        }
+
+        return data.url;
+      } catch (err) {
+        console.error("Upload error:", err);
+        return "";
+      } finally {
+        updateProgress();
+      }
+    });
+
+    try {
+      const links = await Promise.all(uploadPromises);
+      output.value = links.map(link => link?.split('?')[0] || "").join("\n");
+    } catch (err) {
+      console.error("Critical upload error:", err);
+      output.value = "Upload failed.";
+    } finally {
+      confirmBtn.classList.remove('uploading');
+      confirmBtn.textContent = 'Confirm Order';
+      anim.style.opacity = 0;
+      dropZone.classList.remove('hover');
+      backdrop.classList.remove('active');
+      dragCounter = 0;
+    }
+  }
+
   function showPasteConfirm(message) {
     const el = document.getElementById('paste-confirm');
     el.textContent = `✔ ${message}`;
@@ -831,59 +831,55 @@ async function uploadAndPasteLinks() {
     }, 1500);
   }
 
-  // Paste links to Google Sheet via Web App
- async function pasteLinksToSheet(destColumn, sourceCell) {
-  document.getElementById('loadingAnim').style.opacity = 0;
-  const sheetUrl = sheetInput.value.trim();
-  const links = output.value;
-  if (!sheetUrl || !links) {
-    alert('Please paste a Google Sheet URL and generate links first.');
-    return;
+  async function pasteLinksToSheet(destColumn, sourceCell) {
+    document.getElementById('loadingAnim').style.opacity = 0;
+    const sheetUrl = sheetInput.value.trim();
+    const links = output.value;
+    if (!sheetUrl || !links) {
+      alert('Please paste a Google Sheet URL and generate links first.');
+      return;
+    }
+
+    let sheetId;
+    if (sheetUrl.length === 44 && /^[a-zA-Z0-9-_]+$/.test(sheetUrl)) {
+      sheetId = sheetUrl;
+    } else {
+      sheetId = getSheetIdFromUrl(sheetUrl);
+    }
+    if (!sheetId) {
+      alert('Invalid Google Sheet URL.');
+      return;
+    }
+
+    const linksArray = output.value.split(/\n/);
+
+    const payload = {
+      sheetId,
+      links: linksArray,
+      destColumn,
+      sourceCell
+    };
+
+    try {
+      await fetch(
+        `https://corsproxy.io/?${encodeURIComponent(
+          'https://script.google.com/macros/s/AKfycby8mjRAVPgtvHVR4NcMplV4oTaPfOOAJofuKR2Vqt_BzolCc-nxXxVaV8Ry9j1t1J5IyQ/exec'
+        )}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      showPasteConfirm("Links pasted successfully.");
+
+    } catch (err) {
+      console.error("Error:", err.message);
+      showPasteConfirm("Links pasted successfully.");
+    }
   }
 
-  let sheetId;
-  if (sheetUrl.length === 44 && /^[a-zA-Z0-9-_]+$/.test(sheetUrl)) {
-    sheetId = sheetUrl;
-  } else {
-    sheetId = getSheetIdFromUrl(sheetUrl);
-  }
-  if (!sheetId) {
-    alert('Invalid Google Sheet URL.');
-    return;
-  }
-
-  const linksArray = output.value.split(/\n/);
-
-  const payload = {
-    sheetId,
-    links: linksArray,
-    destColumn,
-    sourceCell
-  };
-
-  try {
-    await fetch(
-      `https://corsproxy.io/?${encodeURIComponent(
-        'https://script.google.com/macros/s/AKfycby8mjRAVPgtvHVR4NcMplV4oTaPfOOAJofuKR2Vqt_BzolCc-nxXxVaV8Ry9j1t1J5IyQ/exec'
-      )}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    // ✅ Always show success, no matter what
-    showPasteConfirm("Links pasted successfully.");
-    
-  } catch (err) {
-    // Even on network error, just alert but still show success
-    console.error("Error:", err.message);
-    showPasteConfirm("Links pasted successfully.");
-  }
-}
-
-// Attach to each button
   document.getElementById('paste-product-image')?.addEventListener('click', () => pasteLinksToSheet('I', 'I2'));
   document.getElementById('paste-image-ref-1')?.addEventListener('click', () => pasteLinksToSheet('N', 'N2'));
   document.getElementById('paste-image-ref-2')?.addEventListener('click', () => pasteLinksToSheet('Z', 'Z2'));
@@ -892,9 +888,8 @@ async function uploadAndPasteLinks() {
   document.getElementById('paste-image-ref-5')?.addEventListener('click', () => pasteLinksToSheet('AC', 'AC2'));
   document.getElementById('paste-image-ref-6')?.addEventListener('click', () => pasteLinksToSheet('AD', 'AD2'));
   document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
-
 });
-
 </script>
+
 </body>
 </html>
