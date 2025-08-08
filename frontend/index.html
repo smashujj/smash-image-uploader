@@ -691,7 +691,8 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('confirm-order')
     .addEventListener('click', uploadAndPasteLinks);
 
-  async function uploadAndPasteLinks() {
+  window.uploadAndPasteLinks = async function uploadAndPasteLinks() {
+    const confirmBtn = document.getElementById('confirm-order');
     const anim = document.getElementById('loadingAnim');
     const output = document.getElementById('output');
     const dropZone = document.getElementById('drop-zone');
