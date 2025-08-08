@@ -687,6 +687,129 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+async function uploadAndPasteLinks() {
+  const confirmBtn = document.getElementById('confirm-order');
+  const anim = document.getElementById('loadingAnim');
+  const output = document.getElementById('output');
+  const dropZone = document.getElementById('drop-zone');
+  const backdrop = document.getElementById('drop-backdrop');
+
+ if (confirmBtn) {
+  confirmBtn.classList.add('uploading');
+  confirmBtn.textContent = 'UPLOADING...';
+} else {
+  console.error("confirmBtn not found in DOM");
+}
+  anim.style.opacity = 1;
+  output.value = "";
+  progressFill.style.width = '0%';
+
+  let completed = 0;
+
+  const updateProgress = () => {
+    completed++;
+    const percent = Math.round((completed / filesArray.length) * 100);
+    progressFill.style.width = `${percent}%`;
+  };
+
+  const ensureUnder500KB = async (file) => {
+    let quality = 0.8;
+    let compressed = file;
+
+    const compressToJpeg = async (input, q) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        const img = new Image();
+
+        reader.onload = (e) => (img.src = e.target.result);
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          const maxW = 1600, maxH = 1600;
+
+          if (width > maxW || height > maxH) {
+            const scale = Math.min(maxW / width, maxH / height);
+            width *= scale;
+            height *= scale;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            resolve(new File([blob], `${generateRandomName()}.jpg`, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            }));
+          }, 'image/jpeg', q);
+        };
+
+        reader.readAsDataURL(input);
+      });
+    };
+
+    let attempts = 0;
+    while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
+      compressed = await compressToJpeg(compressed, quality);
+      quality -= 0.1;
+      attempts++;
+    }
+
+    return compressed;
+  };
+
+  const uploadPromises = filesArray.map(async (file) => {
+    if (file.isPlaceholder) {
+      updateProgress();
+      return "";
+    }
+
+    try {
+    console.log("Uploading file:", file);
+      const compressedFile = await ensureUnder500KB(file);
+      const formData = new FormData();
+      formData.append("image", compressedFile);
+
+      const res = await fetch('/.netlify/functions/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.url) {
+  console.error("Upload failed:", JSON.stringify(data, null, 2));
+  return "";
+}
+
+      return data.url;
+    } catch (err) {
+      console.error("Upload error:", err);
+      return "";
+    } finally {
+      updateProgress();
+    }
+  });
+
+  try {
+    const links = await Promise.all(uploadPromises);
+    output.value = links.map(link => link?.split('?')[0] || "").join("\n");
+  } catch (err) {
+    console.error("Critical upload error:", err);
+    output.value = "Upload failed.";
+  } finally {
+    confirmBtn.classList.remove('uploading');
+    confirmBtn.textContent = 'Confirm Order';
+    anim.style.opacity = 0;
+    dropZone.classList.remove('hover');
+    backdrop.classList.remove('active');
+    dragCounter = 0;
+  }
+}
+
   // Show temporary paste confirmation
   function showPasteConfirm(message) {
     const el = document.getElementById('paste-confirm');
@@ -769,126 +892,6 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
 });
 
-async function uploadAndPasteLinks() {
-  const confirmBtn = document.getElementById('confirm-order');
-  const anim = document.getElementById('loadingAnim');
-  const output = document.getElementById('output');
-  const dropZone = document.getElementById('drop-zone');
-  const backdrop = document.getElementById('drop-backdrop');
-
-  confirmBtn.classList.add('uploading');
-  confirmBtn.textContent = 'UPLOADING...';
-  anim.style.opacity = 1;
-  output.value = "";
-  progressFill.style.width = '0%';
-
-  let completed = 0;
-
-  const updateProgress = () => {
-    completed++;
-    const percent = Math.round((completed / filesArray.length) * 100);
-    progressFill.style.width = `${percent}%`;
-  };
-
-  const ensureUnder500KB = async (file) => {
-    let quality = 0.8;
-    let compressed = file;
-
-    const compressToJpeg = async (input, q) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        const img = new Image();
-
-        reader.onload = (e) => (img.src = e.target.result);
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let { width, height } = img;
-          const maxW = 1600, maxH = 1600;
-
-          if (width > maxW || height > maxH) {
-            const scale = Math.min(maxW / width, maxH / height);
-            width *= scale;
-            height *= scale;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob((blob) => {
-            resolve(new File([blob], `${generateRandomName()}.jpg`, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            }));
-          }, 'image/jpeg', q);
-        };
-
-        reader.readAsDataURL(input);
-      });
-    };
-
-    let attempts = 0;
-    while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
-      compressed = await compressToJpeg(compressed, quality);
-      quality -= 0.1;
-      attempts++;
-    }
-
-    return compressed;
-  };
-
-  const uploadPromises = filesArray.map(async (file) => {
-    if (file.isPlaceholder) {
-      updateProgress();
-      return "";
-    }
-
-    try {
-    console.log("Uploading file:", file);
-      const compressedFile = await ensureUnder500KB(file);
-      const formData = new FormData();
-      formData.append("image", compressedFile);
-
-      const res = await fetch('/.netlify/functions/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.url) {
-        console.error("Upload failed:", data);
-        return "";
-      }
-
-      return data.url;
-    } catch (err) {
-      console.error("Upload error:", err);
-      return "";
-    } finally {
-      updateProgress();
-    }
-  });
-
-  try {
-    const links = await Promise.all(uploadPromises);
-    output.value = links.map(link => link?.split('?')[0] || "").join("\n");
-  } catch (err) {
-    console.error("Critical upload error:", err);
-    output.value = "Upload failed.";
-  } finally {
-    confirmBtn.classList.remove('uploading');
-    confirmBtn.textContent = 'Confirm Order';
-    anim.style.opacity = 0;
-    dropZone.classList.remove('hover');
-    backdrop.classList.remove('active');
-    dragCounter = 0;
-  }
-}
-
 </script>
-
 </body>
 </html>
