@@ -671,7 +671,7 @@ return availablePlaceholders.shift();
 <script>
 window.addEventListener('DOMContentLoaded', () => {
   const sheetInput = document.getElementById('sheet-url-input');
-
+  const confirmBtn = document.getElementById('confirm-order');
   // Helper: Extract sheet ID from URL
   function getSheetIdFromUrl(url) {
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
@@ -692,7 +692,6 @@ window.addEventListener('DOMContentLoaded', () => {
     .addEventListener('click', uploadAndPasteLinks);
 
   async function uploadAndPasteLinks() {
-    const confirmBtn = document.getElementById('confirm-order');
     const anim = document.getElementById('loadingAnim');
     const output = document.getElementById('output');
     const dropZone = document.getElementById('drop-zone');
