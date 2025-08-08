@@ -565,7 +565,7 @@ return availablePlaceholders.shift();
 });
 
  const confirmBtn = document.getElementById('confirm-order');
-
+ const anim = document.getElementById('loadingAnim');
 confirmBtn.addEventListener('click', async () => {
 
   await uploadAndPasteLinks();
