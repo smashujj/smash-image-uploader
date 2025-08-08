@@ -685,7 +685,9 @@ window.addEventListener('DOMContentLoaded', () => {
     if (id) {
       sheetInput.value = id;
     }
-  });
+
+document.getElementById('confirm-order').addEventListener('click', uploadAndPasteLinks);
+});
 
 async function uploadAndPasteLinks() {
   const confirmBtn = document.getElementById('confirm-order');
@@ -880,8 +882,7 @@ async function uploadAndPasteLinks() {
   }
 }
 
-
-  // Attach to each button
+// Attach to each button
   document.getElementById('paste-product-image')?.addEventListener('click', () => pasteLinksToSheet('I', 'I2'));
   document.getElementById('paste-image-ref-1')?.addEventListener('click', () => pasteLinksToSheet('N', 'N2'));
   document.getElementById('paste-image-ref-2')?.addEventListener('click', () => pasteLinksToSheet('Z', 'Z2'));
@@ -890,6 +891,7 @@ async function uploadAndPasteLinks() {
   document.getElementById('paste-image-ref-5')?.addEventListener('click', () => pasteLinksToSheet('AC', 'AC2'));
   document.getElementById('paste-image-ref-6')?.addEventListener('click', () => pasteLinksToSheet('AD', 'AD2'));
   document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
+
 });
 
 </script>
