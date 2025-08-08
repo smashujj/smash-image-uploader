@@ -261,7 +261,7 @@
   <div id="progress-bar"><div id="progress-fill"></div></div>
  <div style="display: flex; gap: 12px; justify-content: center; margin-top: 10px;">
   <button id="add-placeholder" class="button">Add Empty Image</button>
-  <button id="confirm-order" class="button">Confirm Order</button>
+  <button id="confirm-order" class="button" onclick="uploadAndPasteLinks()">Confirm Order</button>
   <button id="reset-images" class="button">Reset Images</button>
 </div>
 
@@ -888,6 +888,8 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('paste-image-ref-5')?.addEventListener('click', () => pasteLinksToSheet('AC', 'AC2'));
   document.getElementById('paste-image-ref-6')?.addEventListener('click', () => pasteLinksToSheet('AD', 'AD2'));
   document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
+
+   window.uploadAndPasteLinks = uploadAndPasteLinks;
 });
 </script>
 
