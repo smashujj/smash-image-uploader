@@ -378,11 +378,13 @@ function generateRandomName(length = 4) {
 }
 
 // =================== PREVIEW RENDERING ===================
-function updatePreview(resetNumbers = true) {
+function updatePreview(resetNumbers = false) {
     preview.innerHTML = '';
+
     filesArray.forEach((file, i) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'preview-wrapper';
+        wrapper.style.position = 'relative';
 
         if (file.isPlaceholder) {
             const placeholder = document.createElement('div');
@@ -402,24 +404,23 @@ function updatePreview(resetNumbers = true) {
             img.src = file.previewData;
             img.className = 'preview-image';
             wrapper.appendChild(img);
-
-            // Remove button
-            const remove = document.createElement('button');
-            remove.className = 'remove-button';
-            remove.innerHTML = '&times;'; // Fixed X icon
-            remove.onclick = () => {
-                filesArray.splice(i, 1);
-                updatePreview();
-            };
-            wrapper.appendChild(remove);
         }
 
+        // Add number label
         const label = document.createElement('div');
         label.className = 'preview-number';
-        if (resetNumbers) {
-            label.textContent = i + 1; // Only reset if flag is true
-        }
+        label.textContent = i + 1;
         wrapper.appendChild(label);
+
+        // Add remove button
+        const remove = document.createElement('button');
+        remove.className = 'remove-button';
+        remove.textContent = '✖';
+        remove.onclick = () => {
+            filesArray.splice(i, 1);
+            updatePreview(true);
+        };
+        wrapper.appendChild(remove);
 
         preview.appendChild(wrapper);
     });
@@ -573,14 +574,12 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('reset-images').addEventListener('click', () => {
     filesArray = [];
     fileInput.value = "";
-    fileInput.type = ''; // Force reset
-    fileInput.type = 'file';
     output.value = "";
     dragCounter = 0;
     progressFill.style.width = '0%';
     backdrop.classList.remove('active');
     dropZone.classList.remove('hover');
-    updatePreview();
+    updatePreview(true);
   });
 
   document.addEventListener('dragenter', (e) => {
@@ -605,23 +604,22 @@ window.addEventListener('DOMContentLoaded', () => {
     animation: 150,
     onStart: () => { isSorting = true; },
     onEnd: () => {
-      isSorting = false;
-      dragCounter = 0;
-      backdrop.classList.remove('active');
-      dropZone.classList.remove('hover');
+    isSorting = false;
+    dragCounter = 0;
+    backdrop.classList.remove('active');
+    dropZone.classList.remove('hover');
 
-      const children = Array.from(preview.children);
-      const newOrder = children.map((child) => {
+    const children = Array.from(preview.children);
+    filesArray = children.map(child => {
         const img = child.querySelector('img');
         if (img) {
-          return filesArray.find(f => !f.isPlaceholder && f.previewData === img.src);
+            return filesArray.find(f => !f.isPlaceholder && f.previewData === img.src);
         } else {
-          return filesArray.find(f => f.isPlaceholder);
+            return filesArray.find(f => f.isPlaceholder);
         }
-      }).filter(Boolean);
+    }).filter(Boolean);
 
-      filesArray = [...newOrder];
-      updatePreview(false); // Pass a flag so preview doesn't reset sorting
+    updatePreview(true);
     }
   });
 
