@@ -378,39 +378,51 @@ function generateRandomName(length = 4) {
 }
 
 // =================== PREVIEW RENDERING ===================
-function updatePreview() {
-  preview.innerHTML = '';
-  filesArray.forEach((file, i) => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'preview-wrapper';
+function updatePreview(resetNumbers = true) {
+    preview.innerHTML = '';
+    filesArray.forEach((file, i) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'preview-wrapper';
 
-    if (file.isPlaceholder) {
-      const placeholder = document.createElement('div');
-      placeholder.style.width = '90px';
-      placeholder.style.height = '90px';
-      placeholder.style.display = 'flex';
-      placeholder.style.alignItems = 'center';
-      placeholder.style.justifyContent = 'center';
-      placeholder.style.border = '2px dashed #ccc';
-      placeholder.style.borderRadius = '8px';
-      placeholder.style.color = '#ccc';
-      placeholder.style.fontSize = '12px';
-      placeholder.textContent = 'EMPTY';
-      wrapper.appendChild(placeholder);
-    } else {
-      const img = document.createElement('img');
-      img.src = file.previewData;
-      img.className = 'preview-image';
-      wrapper.appendChild(img);
-    }
+        if (file.isPlaceholder) {
+            const placeholder = document.createElement('div');
+            placeholder.style.width = '90px';
+            placeholder.style.height = '90px';
+            placeholder.style.display = 'flex';
+            placeholder.style.alignItems = 'center';
+            placeholder.style.justifyContent = 'center';
+            placeholder.style.border = '2px dashed #ccc';
+            placeholder.style.borderRadius = '8px';
+            placeholder.style.color = '#ccc';
+            placeholder.style.fontSize = '12px';
+            placeholder.textContent = 'EMPTY';
+            wrapper.appendChild(placeholder);
+        } else {
+            const img = document.createElement('img');
+            img.src = file.previewData;
+            img.className = 'preview-image';
+            wrapper.appendChild(img);
 
-    const label = document.createElement('div');
-    label.className = 'preview-number';
-    label.textContent = i + 1;
+            // Remove button
+            const remove = document.createElement('button');
+            remove.className = 'remove-button';
+            remove.innerHTML = '&times;'; // Fixed X icon
+            remove.onclick = () => {
+                filesArray.splice(i, 1);
+                updatePreview();
+            };
+            wrapper.appendChild(remove);
+        }
 
-    wrapper.appendChild(label);
-    preview.appendChild(wrapper);
-  });
+        const label = document.createElement('div');
+        label.className = 'preview-number';
+        if (resetNumbers) {
+            label.textContent = i + 1; // Only reset if flag is true
+        }
+        wrapper.appendChild(label);
+
+        preview.appendChild(wrapper);
+    });
 }
 
 // =================== HANDLE FILE INPUT ===================
@@ -531,7 +543,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Remove button
     const remove = document.createElement('button');
     remove.className = 'remove-button';
-    remove.textContent = '×';
+    remove.innerHTML = '&times;';
     remove.onclick = () => {
       filesArray.splice(index, 1);
       updatePreview();
@@ -608,8 +620,8 @@ window.addEventListener('DOMContentLoaded', () => {
         }
       }).filter(Boolean);
 
-      filesArray = newOrder;
-      updatePreview();
+      filesArray = [...newOrder];
+      updatePreview(false); // Pass a flag so preview doesn't reset sorting
     }
   });
 
