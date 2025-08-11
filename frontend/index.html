@@ -493,49 +493,54 @@ window.addEventListener('DOMContentLoaded', () => {
     progressFill.style.width = `${percent}%`;
   };
 
-  const updatePreview = () => {
-    preview.innerHTML = '';
-    filesArray.forEach((file, i) => {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'preview-wrapper';
+  function updatePreview() {
+  const preview = document.getElementById('preview');
+  preview.innerHTML = ''; // clear current previews
 
-      if (file.isPlaceholder) {
-        const placeholder = document.createElement('div');
-        placeholder.style.width = '90px';
-        placeholder.style.height = '90px';
-        placeholder.style.display = 'flex';
-        placeholder.style.alignItems = 'center';
-        placeholder.style.justifyContent = 'center';
-        placeholder.style.border = '2px dashed #ccc';
-        placeholder.style.borderRadius = '8px';
-        placeholder.style.color = '#ccc';
-        placeholder.style.fontSize = '12px';
-        placeholder.textContent = 'EMPTY';
-        wrapper.appendChild(placeholder);
-      } else {
-        const img = document.createElement('img');
-        img.src = file.previewData;
-        img.className = 'preview-image';
-        wrapper.appendChild(img);
-      }
+  filesArray.forEach((file, index) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'preview-wrapper';
 
-      const label = document.createElement('div');
-      label.className = 'preview-number';
-      label.textContent = i + 1;
+    // Thumbnail
+    if (file.isPlaceholder) {
+      const placeholder = document.createElement('div');
+      placeholder.style.width = '90px';
+      placeholder.style.height = '90px';
+      placeholder.style.display = 'flex';
+      placeholder.style.alignItems = 'center';
+      placeholder.style.justifyContent = 'center';
+      placeholder.style.border = '2px dashed #ccc';
+      placeholder.style.borderRadius = '8px';
+      placeholder.style.color = '#ccc';
+      placeholder.style.fontSize = '12px';
+      placeholder.textContent = 'EMPTY';
+      wrapper.appendChild(placeholder);
+    } else {
+      const img = document.createElement('img');
+      img.src = file.previewData;
+      img.className = 'preview-image';
+      wrapper.appendChild(img);
+    }
 
-      const remove = document.createElement('button');
-      remove.className = 'remove-button';
-      remove.textContent = '×';
-      remove.onclick = () => {
-        filesArray.splice(i, 1);
-        updatePreview();
-      };
+    // Number label
+    const label = document.createElement('div');
+    label.className = 'preview-number';
+    label.textContent = index + 1;
+    wrapper.appendChild(label);
 
-      wrapper.appendChild(label);
-      wrapper.appendChild(remove);
-      preview.appendChild(wrapper);
-    });
-  };
+    // Remove button
+    const remove = document.createElement('button');
+    remove.className = 'remove-button';
+    remove.textContent = '×';
+    remove.onclick = () => {
+      filesArray.splice(index, 1);
+      updatePreview();
+    };
+    wrapper.appendChild(remove);
+
+    preview.appendChild(wrapper);
+  });
+}
 
   function handleFiles(fileList) {
     Array.from(fileList).forEach((file) => {
@@ -556,6 +561,8 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('reset-images').addEventListener('click', () => {
     filesArray = [];
     fileInput.value = "";
+    fileInput.type = ''; // Force reset
+    fileInput.type = 'file';
     output.value = "";
     dragCounter = 0;
     progressFill.style.width = '0%';
