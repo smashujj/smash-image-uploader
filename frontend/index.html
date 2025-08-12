@@ -314,7 +314,6 @@
   <button id="paste-image-ref-7" class="button">Paste as Image Ref 7</button>
 </div>
 
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const dropZone = document.getElementById('drop-zone');
@@ -329,51 +328,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let filesArray = [];
   let dragCounter = 0;
-  let completedUploads = 0;
 
+  // === UPDATE PREVIEW ===
   function updatePreview() {
     preview.innerHTML = '';
     filesArray.forEach((file, index) => {
-      const item = document.createElement('div');
-      item.className = 'preview-item';
-      item.setAttribute('data-index', index);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'preview-item';
+      wrapper.setAttribute('data-index', index);
 
       if (file.isPlaceholder) {
         const placeholder = document.createElement('div');
-        Object.assign(placeholder.style, {
-          width: '90px', height: '90px',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          border: '2px dashed #ccc', borderRadius: '8px',
-          color: '#ccc', fontSize: '12px'
-        });
+        placeholder.style.width = '90px';
+        placeholder.style.height = '90px';
+        placeholder.style.display = 'flex';
+        placeholder.style.alignItems = 'center';
+        placeholder.style.justifyContent = 'center';
+        placeholder.style.border = '2px dashed #ccc';
+        placeholder.style.borderRadius = '8px';
+        placeholder.style.color = '#ccc';
+        placeholder.style.fontSize = '12px';
         placeholder.textContent = 'EMPTY';
-        item.appendChild(placeholder);
+        wrapper.appendChild(placeholder);
       } else {
         const img = document.createElement('img');
         img.src = file.previewData;
         img.className = 'preview-image';
-        item.appendChild(img);
+        img.draggable = false; // prevent opening in tab
+        wrapper.appendChild(img);
       }
 
+      // Number label (bottom-left)
       const label = document.createElement('div');
       label.className = 'image-number';
       label.textContent = index + 1;
-      item.appendChild(label);
+      wrapper.appendChild(label);
 
+      // Remove button (top-right)
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-button';
       removeBtn.innerHTML = '&times;';
-      removeBtn.onclick = (e) => {
-        e.preventDefault();
+      removeBtn.onclick = () => {
         filesArray.splice(index, 1);
         updatePreview();
       };
-      item.appendChild(removeBtn);
+      wrapper.appendChild(removeBtn);
 
-      preview.appendChild(item);
+      preview.appendChild(wrapper);
     });
   }
 
+  // === HANDLE FILES ===
   function handleFiles(fileList) {
     Array.from(fileList).forEach(file => {
       const reader = new FileReader();
@@ -385,35 +390,31 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.getElementById('add-placeholder')?.addEventListener('click', () => {
+  // === ADD PLACEHOLDER ===
+  document.getElementById('add-placeholder').addEventListener('click', () => {
     filesArray.push({ isPlaceholder: true });
     updatePreview();
   });
 
-  document.getElementById('reset-images')?.addEventListener('click', () => {
+  // === RESET ===
+  document.getElementById('reset-images').addEventListener('click', () => {
     filesArray = [];
     fileInput.value = "";
     output.value = "";
     progressFill.style.width = '0%';
     preview.innerHTML = '';
-    dragCounter = 0;
-    backdrop.classList.remove('active');
-    dropZone.classList.remove('hover');
   });
 
+  // === DRAG ENTER / LEAVE BACKDROP ===
   document.addEventListener('dragenter', (e) => {
-    if (!e.dataTransfer || !e.dataTransfer.types.includes('Files')) return;
-    e.preventDefault();
-    e.stopPropagation();
+    if (!e.dataTransfer.types.includes('Files')) return;
     dragCounter++;
     backdrop.classList.add('active');
     dropZone.classList.add('hover');
   });
 
   document.addEventListener('dragleave', (e) => {
-    if (!e.dataTransfer || !e.dataTransfer.types.includes('Files')) return;
-    e.preventDefault();
-    e.stopPropagation();
+    if (!e.dataTransfer.types.includes('Files')) return;
     dragCounter--;
     if (dragCounter <= 0) {
       dragCounter = 0;
@@ -422,50 +423,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  dropZone.addEventListener('click', (e) => {
+  window.addEventListener('dragover', (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    fileInput.click();
   });
 
-  dropZone.addEventListener('dragover', (e) => {
+  window.addEventListener('drop', (e) => {
     e.preventDefault();
-    e.stopPropagation();
-    dropZone.classList.add('hover');
-  });
-
-  dropZone.addEventListener('dragleave', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropZone.classList.remove('hover');
-  });
-
-  dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropZone.classList.remove('hover');
     backdrop.classList.remove('active');
+    dropZone.classList.remove('hover');
     dragCounter = 0;
     if (e.dataTransfer?.files?.length) {
       handleFiles(e.dataTransfer.files);
     }
   });
 
+  dropZone.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
+  // === SORTABLE ===
   new Sortable(preview, {
     animation: 150,
     onEnd: () => {
       const reordered = [];
       preview.querySelectorAll('.preview-item').forEach(item => {
         const idx = parseInt(item.getAttribute('data-index'), 10);
-        if (!isNaN(idx)) reordered.push(filesArray[idx]);
+        reordered.push(filesArray[idx]);
       });
       filesArray = reordered;
       updatePreview();
     }
   });
 
+  // === COMPRESSION ===
   async function ensureUnder500KB(file) {
     let quality = 0.8;
     let compressed = file;
@@ -503,13 +492,14 @@ document.addEventListener('DOMContentLoaded', () => {
     return compressed;
   }
 
+  // === UPLOAD ===
   async function uploadAndPasteLinks() {
     confirmBtn.classList.add('uploading');
     confirmBtn.textContent = 'UPLOADING...';
     anim.style.opacity = 1;
     output.value = "";
     progressFill.style.width = '0%';
-    completedUploads = 0;
+    let completed = 0;
 
     const uploadPromises = filesArray.map(async (file) => {
       if (file.isPlaceholder) return "";
@@ -519,6 +509,8 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append("image", compressed);
         const res = await fetch("/.netlify/functions/upload", { method: "POST", body: formData });
         const data = await res.json();
+        completed++;
+        progressFill.style.width = `${(completed / filesArray.length) * 100}%`;
         return data.url || "";
       } catch {
         return "";
@@ -534,6 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   confirmBtn.addEventListener('click', uploadAndPasteLinks);
 
+  // === SHEET PASTE ===
   function getSheetIdFromUrl(url) {
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     return match ? match[1] : null;
@@ -557,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
       body: JSON.stringify(payload)
     });
     const el = document.getElementById('paste-confirm');
-    el.textContent = '✔ Links pasted successfully.';
+    el.textContent = '✔ LINKS PASTED';
     el.style.display = 'flex';
     el.style.opacity = 1;
     setTimeout(() => { el.style.opacity = 0; el.style.display = 'none'; }, 1500);
@@ -574,5 +567,53 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<style>
+#drop-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+  z-index: 9998;
+}
+#drop-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+}
+.preview-item {
+  position: relative;
+  display: inline-block;
+  margin: 5px;
+}
+.image-number {
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  background: #007BFF;
+  color: #fff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.remove-button {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 16px;
+}
+</style>
 </body>
 </html>
