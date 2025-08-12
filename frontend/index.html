@@ -573,34 +573,30 @@ window.addEventListener('DOMContentLoaded', () => {
 }
 
   document.getElementById('add-placeholder').addEventListener('click', () => {
-    filesArray.push({ isPlaceholder: true });
-    updatePreview();
-  });
+  filesArray.push({ isPlaceholder: true });
+  updatePreview(true); // Force full rebuild & correct indexes
+});
 
   document.getElementById('reset-images').addEventListener('click', () => {
-  // ✅ Clear all stored files
+  // 🔹 Clear all stored files, including placeholders
   filesArray = [];
 
-  // ✅ Clear Sortable's data-index references
-  preview.querySelectorAll('.preview-item').forEach(item => {
-    item.removeAttribute('data-index');
-  });
-
-  // ✅ Reset file input and output
+  // 🔹 Reset file input and output
   fileInput.value = "";
   output.value = "";
 
-  // ✅ Reset drag counter and progress bar
+  // 🔹 Reset drag counter and progress bar
   dragCounter = 0;
   progressFill.style.width = '0%';
 
-  // ✅ Remove active/hover styles
+  // 🔹 Remove active/hover styles
   backdrop.classList.remove('active');
   dropZone.classList.remove('hover');
 
-  // ✅ Clear the preview display entirely
+  // 🔹 Clear the preview display entirely
   preview.innerHTML = '';
 });
+
 
   document.addEventListener('dragenter', (e) => {
     if (isSorting || e.dataTransfer.types[0] !== 'Files') return;
@@ -622,23 +618,24 @@ window.addEventListener('DOMContentLoaded', () => {
 
   new Sortable(preview, {
   animation: 150,
-  onEnd: (evt) => {
-    const oldIndex = evt.oldIndex;
-    const newIndex = evt.newIndex;
+  onEnd: () => {
+    const reorderedFiles = [];
+    preview.querySelectorAll(".preview-item").forEach(item => {
+      const index = parseInt(item.getAttribute("data-index"), 10);
+      if (!isNaN(index) && filesArray[index] !== undefined) {
+        reorderedFiles.push(filesArray[index]);
+      }
+    });
+    filesArray = reorderedFiles;
 
-    // Only reorder if the position actually changed
-    if (oldIndex !== newIndex) {
-      const movedItem = filesArray.splice(oldIndex, 1)[0];
-      filesArray.splice(newIndex, 0, movedItem);
-    }
-
-    // Update numbering and data-index for each preview item
+    // Renumber everything (including placeholders)
     preview.querySelectorAll(".preview-item .image-number").forEach((label, idx) => {
       label.textContent = idx + 1;
       preview.querySelectorAll(".preview-item")[idx].setAttribute("data-index", idx);
     });
   }
 });
+
 
   window.addEventListener("dragover", (e) => {
     e.preventDefault();
