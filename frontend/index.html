@@ -335,14 +335,15 @@ document.addEventListener('DOMContentLoaded', () => {
   let dragCounter = 0;
   let completedUploads = 0;
 
-  // ✅ Prevent browser from opening dropped files anywhere
+  // ✅ Prevent browser from opening dropped files
   ['dragover', 'drop'].forEach(eventName => {
     document.addEventListener(eventName, (e) => {
       e.preventDefault();
+      e.stopPropagation();
     });
   });
 
-  // ✅ Create spotlight hole in backdrop
+  // ✅ Create spotlight hole in overlay
   function updateBackdropHole() {
     const rect = dropZone.getBoundingClientRect();
     const padding = 10;
@@ -358,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
     )`;
   }
 
-  // ✅ Update preview UI
+  // ✅ Generate preview UI
   function updatePreview() {
     preview.innerHTML = '';
     filesArray.forEach((file, index) => {
@@ -404,9 +405,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ Handle incoming files
+  // ✅ File handling (keeps file explorer order)
   function handleFiles(fileList) {
-    Array.from(fileList).forEach(file => {
+    const sortedFiles = Array.from(fileList).sort((a, b) => a.lastModified - b.lastModified);
+    sortedFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
         filesArray.push({ file, previewData: e.target.result });
@@ -416,13 +418,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ Add placeholder button
+  // ✅ Add placeholder
   document.getElementById('add-placeholder').addEventListener('click', () => {
     filesArray.push({ isPlaceholder: true });
     updatePreview();
   });
 
-  // ✅ Reset button
+  // ✅ Reset images
   document.getElementById('reset-images').addEventListener('click', () => {
     filesArray = [];
     fileInput.value = "";
@@ -431,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
     preview.innerHTML = '';
   });
 
-  // ✅ Global drag enter
+  // ✅ Global drag events
   document.addEventListener('dragenter', (e) => {
     if (e.dataTransfer?.types?.includes('Files')) {
       dragCounter++;
@@ -441,7 +443,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ✅ Global drag leave
   document.addEventListener('dragleave', (e) => {
     if (e.dataTransfer?.types?.includes('Files')) {
       dragCounter--;
@@ -453,25 +454,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ✅ Global drop — works anywhere
   document.addEventListener('drop', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     backdrop.classList.remove('active');
     dropZone.classList.remove('hover');
     dragCounter = 0;
+
     if (e.dataTransfer?.files?.length) {
       handleFiles(e.dataTransfer.files);
     }
   });
 
-  // ✅ Clicking drop zone opens file picker
   dropZone.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
-  // ✅ Update hole on resize
   window.addEventListener('resize', updateBackdropHole);
 
-  // ✅ Sortable — no flying animations
+  // ✅ Sortable setup - no flying images
   new Sortable(preview, {
     animation: 0,
     onEnd: () => {
@@ -485,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ✅ Compress before upload
+  // ✅ Compress image before upload
   async function ensureUnder500KB(file) {
     let quality = 0.8;
     let compressed = file;
@@ -523,7 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return compressed;
   }
 
-  // ✅ Upload images
+  // ✅ Upload + paste
   async function uploadAndPasteLinks() {
     confirmBtn.classList.add('uploading');
     confirmBtn.textContent = 'UPLOADING...';
@@ -555,7 +555,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   confirmBtn.addEventListener('click', uploadAndPasteLinks);
 
-  // ✅ Paste into sheet
   function getSheetIdFromUrl(url) {
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     return match ? match[1] : null;
