@@ -334,16 +334,15 @@ document.addEventListener('DOMContentLoaded', () => {
   let filesArray = [];
   let dragCounter = 0;
   let completedUploads = 0;
-  
- // ✅ Prevent browser from opening dropped files
+
+  // ✅ Prevent browser from opening dropped files anywhere
   ['dragover', 'drop'].forEach(eventName => {
     document.addEventListener(eventName, (e) => {
       e.preventDefault();
-      e.stopPropagation();
     });
   });
 
-  // ✅ Function to create spotlight hole
+  // ✅ Create spotlight hole in backdrop
   function updateBackdropHole() {
     const rect = dropZone.getBoundingClientRect();
     const padding = 10;
@@ -359,7 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
     )`;
   }
 
-  // ✅ Generate preview UI
+  // ✅ Update preview UI
   function updatePreview() {
     preview.innerHTML = '';
     filesArray.forEach((file, index) => {
@@ -405,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ File handling
+  // ✅ Handle incoming files
   function handleFiles(fileList) {
     Array.from(fileList).forEach(file => {
       const reader = new FileReader();
@@ -417,13 +416,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ Add placeholder
+  // ✅ Add placeholder button
   document.getElementById('add-placeholder').addEventListener('click', () => {
     filesArray.push({ isPlaceholder: true });
     updatePreview();
   });
 
-  // ✅ Reset images
+  // ✅ Reset button
   document.getElementById('reset-images').addEventListener('click', () => {
     filesArray = [];
     fileInput.value = "";
@@ -432,26 +431,30 @@ document.addEventListener('DOMContentLoaded', () => {
     preview.innerHTML = '';
   });
 
-  // ✅ Drag events
+  // ✅ Global drag enter
   document.addEventListener('dragenter', (e) => {
-    if (e.dataTransfer?.types[0] !== 'Files') return;
-    dragCounter++;
-    updateBackdropHole();
-    backdrop.classList.add('active');
-    dropZone.classList.add('hover');
-  });
-
-  document.addEventListener('dragleave', (e) => {
-    if (e.dataTransfer?.types[0] !== 'Files') return;
-    dragCounter--;
-    if (dragCounter <= 0) {
-      dragCounter = 0;
-      backdrop.classList.remove('active');
-      dropZone.classList.remove('hover');
+    if (e.dataTransfer?.types?.includes('Files')) {
+      dragCounter++;
+      updateBackdropHole();
+      backdrop.classList.add('active');
+      dropZone.classList.add('hover');
     }
   });
 
-  window.addEventListener('drop', (e) => {
+  // ✅ Global drag leave
+  document.addEventListener('dragleave', (e) => {
+    if (e.dataTransfer?.types?.includes('Files')) {
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        backdrop.classList.remove('active');
+        dropZone.classList.remove('hover');
+      }
+    }
+  });
+
+  // ✅ Global drop — works anywhere
+  document.addEventListener('drop', (e) => {
     e.preventDefault();
     backdrop.classList.remove('active');
     dropZone.classList.remove('hover');
@@ -461,12 +464,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ✅ Clicking drop zone opens file picker
   dropZone.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
+  // ✅ Update hole on resize
   window.addEventListener('resize', updateBackdropHole);
 
-  // ✅ Sortable setup - no flying images
+  // ✅ Sortable — no flying animations
   new Sortable(preview, {
     animation: 0,
     onEnd: () => {
@@ -480,7 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ✅ Compress image before upload
+  // ✅ Compress before upload
   async function ensureUnder500KB(file) {
     let quality = 0.8;
     let compressed = file;
@@ -518,7 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return compressed;
   }
 
-  // ✅ Upload + paste
+  // ✅ Upload images
   async function uploadAndPasteLinks() {
     confirmBtn.classList.add('uploading');
     confirmBtn.textContent = 'UPLOADING...';
@@ -550,6 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   confirmBtn.addEventListener('click', uploadAndPasteLinks);
 
+  // ✅ Paste into sheet
   function getSheetIdFromUrl(url) {
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     return match ? match[1] : null;
@@ -589,5 +595,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
 });
 </script>
+
 </body>
 </html>
