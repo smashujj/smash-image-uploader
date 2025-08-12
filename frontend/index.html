@@ -320,199 +320,24 @@ let filesArray = [];
 let dragCounter = 0;
 
 const dropZone = document.getElementById("drop-zone");
-const backdrop = document.getElementById('drop-backdrop');
-const fileInput = document.getElementById('file-input');
-const preview = document.getElementById('preview');
+const backdrop = document.getElementById("drop-backdrop");
+const fileInput = document.getElementById("file-input");
+const preview = document.getElementById("preview");
+const output = document.getElementById("output");
+const progressFill = document.getElementById("progress-fill");
+const confirmBtn = document.getElementById("confirm-order");
+const anim = document.getElementById("loadingAnim");
+const sheetInput = document.getElementById("sheet-url-input");
 
-// =================== IMAGE COMPRESSION ===================
-async function compressImage(file, maxWidth = 1600, maxHeight = 1600, quality = 0.85) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const reader = new FileReader();
-
-    reader.onload = (e) => { img.src = e.target.result; };
-
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-
-      if (width > maxWidth || height > maxHeight) {
-        const scale = Math.min(maxWidth / width, maxHeight / height);
-        width *= scale;
-        height *= scale;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-
-      canvas.toBlob(
-        (blob) => {
-          resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), {
-            type: 'image/jpeg',
-            lastModified: Date.now()
-          }));
-        },
-        'image/jpeg',
-        quality
-      );
-    };
-
-    reader.readAsDataURL(file);
-  });
-}
-
-function getPreviewDataUrl(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
-    reader.readAsDataURL(file);
-  });
-}
-
-function generateRandomName(length = 4) {
-  const chars = 'abcdefghijklmnopqrstuvwxyz';
-  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-}
-
-// =================== PREVIEW RENDERING ===================
-function updatePreview(resetNumbers = false) {
-    preview.innerHTML = '';
-    filesArray.forEach((file, i) => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'preview-wrapper';
-        wrapper.style.position = 'relative';
-
-        if (file.isPlaceholder) {
-            const placeholder = document.createElement('div');
-            placeholder.style.width = '90px';
-            placeholder.style.height = '90px';
-            placeholder.style.display = 'flex';
-            placeholder.style.alignItems = 'center';
-            placeholder.style.justifyContent = 'center';
-            placeholder.style.border = '2px dashed #ccc';
-            placeholder.style.borderRadius = '8px';
-            placeholder.style.color = '#ccc';
-            placeholder.style.fontSize = '12px';
-            placeholder.textContent = 'EMPTY';
-            wrapper.appendChild(placeholder);
-        } else {
-            const img = document.createElement('img');
-            img.src = file.previewData;
-            img.className = 'preview-image';
-            wrapper.appendChild(img);
-        }
-
-        // Number label
-        const label = document.createElement('div');
-        label.className = 'preview-number';
-        label.textContent = resetNumbers ? (i + 1) : (file.number || i + 1);
-        wrapper.appendChild(label);
-
-        // Remove button
-        const remove = document.createElement('button');
-        remove.className = 'remove-button';
-        remove.textContent = '×';
-        remove.onclick = () => {
-            filesArray.splice(i, 1);
-            updatePreview(true); // Renumber after removal
-        };
-        wrapper.appendChild(remove);
-
-        preview.appendChild(wrapper);
-    });
-}
-
-// =================== HANDLE FILE INPUT ===================
-const handleFiles = async (files) => {
-  const fileList = Array.from(files);
-
-  for (const file of fileList) {
-    const randomName = `${generateRandomName()}.jpg`;
-    const compressedFile = (file.size > 1_000_000)
-      ? await compressImage(file, 1600, 1600, 0.85)
-      : file;
-
-    const renamedFile = new File([compressedFile], randomName, {
-      type: 'image/jpeg',
-      lastModified: Date.now()
-    });
-
-    renamedFile.previewData = await getPreviewDataUrl(renamedFile);
-    filesArray.push(renamedFile);
-  }
-
-  updatePreview();
-};
-
-// =================== DROP HANDLERS ===================
-window.addEventListener("dragover", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-});
-
-window.addEventListener("drop", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-
-  dropZone.classList.remove("hover");
-  backdrop.classList.remove("active");
-  dragCounter = 0;
-
-  const dt = e.dataTransfer;
-  if (dt?.files?.length) {
-    handleFiles(dt.files);
-  }
-});
-
-dropZone.addEventListener("click", () => {
-  fileInput.click();
-});
-
-dropZone.addEventListener("dragover", (e) => {
-  e.preventDefault();
-  dropZone.classList.add("hover");
-});
-
-dropZone.addEventListener("dragleave", () => {
-  dropZone.classList.remove("hover");
-});
-</script>
-
-<script>
-window.addEventListener('DOMContentLoaded', () => {
-  const fileInput = document.getElementById('file-input');
-  const preview = document.getElementById('preview');
-  const output = document.getElementById('output');
-  const progressFill = document.getElementById('progress-fill');
-  const confirmBtn = document.getElementById('confirm-order');
-  const anim = document.getElementById('loadingAnim');
-  const dropZone = document.getElementById('drop-zone');
-  const backdrop = document.getElementById('drop-backdrop');
-  const sheetInput = document.getElementById('sheet-url-input');
-
-  let filesArray = [];
-  let dragCounter = 0;
-  let isSorting = false;
-  let completedUploads = 0;
-
-  const updateProgress = () => {
-    completedUploads++;
-    const percent = Math.round((completedUploads / filesArray.length) * 100);
-    progressFill.style.width = `${percent}%`;
-  };
-
-  function updatePreview() {
-  const preview = document.getElementById('preview');
-  preview.innerHTML = ''; // clear current previews
+// =================== IMAGE PREVIEW ===================
+function updatePreview() {
+  preview.innerHTML = '';
 
   filesArray.forEach((file, index) => {
     const wrapper = document.createElement('div');
-    wrapper.className = 'preview-wrapper';
+    wrapper.className = 'preview-item';
+    wrapper.setAttribute('data-index', index);
 
-    // Thumbnail
     if (file.isPlaceholder) {
       const placeholder = document.createElement('div');
       placeholder.style.width = '90px';
@@ -533,13 +358,11 @@ window.addEventListener('DOMContentLoaded', () => {
       wrapper.appendChild(img);
     }
 
-    // Number label
     const label = document.createElement('div');
     label.className = 'preview-number';
     label.textContent = index + 1;
     wrapper.appendChild(label);
 
-    // Remove button
     const remove = document.createElement('button');
     remove.className = 'remove-button';
     remove.innerHTML = '&times;';
@@ -553,12 +376,8 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 }
 
- function handleFiles(fileList) {
-  // ✅ Ensure we're starting from scratch after reset
-  if (filesArray.length === 0 && preview.innerHTML.trim() === '') {
-    filesArray = [];
-  }
-
+// =================== FILE HANDLING ===================
+function handleFiles(fileList) {
   Array.from(fileList).forEach((file) => {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -572,261 +391,217 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 }
 
-  document.getElementById('add-placeholder').addEventListener('click', () => {
+// =================== PLACEHOLDER BUTTON ===================
+document.getElementById('add-placeholder').addEventListener('click', () => {
   filesArray.push({ isPlaceholder: true });
-  updatePreview(true); // Force full rebuild & correct indexes
+  updatePreview();
 });
 
-  document.getElementById('reset-images').addEventListener('click', () => {
-  // 🔹 Clear all stored files, including placeholders
+// =================== RESET BUTTON ===================
+document.getElementById('reset-images').addEventListener('click', () => {
   filesArray = [];
-
-  // 🔹 Reset file input and output
   fileInput.value = "";
   output.value = "";
-
-  // 🔹 Reset drag counter and progress bar
   dragCounter = 0;
   progressFill.style.width = '0%';
-
-  // 🔹 Remove active/hover styles
   backdrop.classList.remove('active');
   dropZone.classList.remove('hover');
-
-  // 🔹 Clear the preview display entirely
   preview.innerHTML = '';
 });
 
-
-  document.addEventListener('dragenter', (e) => {
-    if (isSorting || e.dataTransfer.types[0] !== 'Files') return;
-    e.preventDefault();
-    dragCounter++;
-    backdrop.classList.add('active');
-    dropZone.classList.add('hover');
-  });
-
-  document.addEventListener('dragleave', (e) => {
-    if (isSorting || e.dataTransfer.types[0] !== 'Files') return;
-    dragCounter--;
-    if (dragCounter <= 0) {
-      dragCounter = 0;
-      backdrop.classList.remove('active');
-      dropZone.classList.remove('hover');
-    }
-  });
-
-  new Sortable(preview, {
+// =================== SORTABLE ===================
+new Sortable(preview, {
   animation: 150,
   onEnd: () => {
-    const reorderedFiles = [];
+    const newOrder = [];
     preview.querySelectorAll(".preview-item").forEach(item => {
-      const index = parseInt(item.getAttribute("data-index"), 10);
-      if (!isNaN(index) && filesArray[index] !== undefined) {
-        reorderedFiles.push(filesArray[index]);
+      const oldIndex = parseInt(item.getAttribute("data-index"), 10);
+      if (!isNaN(oldIndex) && filesArray[oldIndex] !== undefined) {
+        newOrder.push(filesArray[oldIndex]);
       }
     });
-    filesArray = reorderedFiles;
-
-    // Renumber everything (including placeholders)
-    preview.querySelectorAll(".preview-item .image-number").forEach((label, idx) => {
-      label.textContent = idx + 1;
-      preview.querySelectorAll(".preview-item")[idx].setAttribute("data-index", idx);
-    });
+    filesArray = newOrder;
+    updatePreview();
   }
 });
 
+// =================== DRAG & DROP ===================
+window.addEventListener("dragover", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+});
 
-  window.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-  });
-
-  window.addEventListener("drop", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dropZone.classList.remove("hover");
-    backdrop.classList.remove("active");
-    dragCounter = 0;
-
-    const dt = e.dataTransfer;
-    if (dt?.files?.length) {
-      handleFiles(dt.files);
-    }
-  });
-
-  function getSheetIdFromUrl(url) {
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    return match ? match[1] : null;
+window.addEventListener("drop", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  dropZone.classList.remove("hover");
+  backdrop.classList.remove("active");
+  dragCounter = 0;
+  if (e.dataTransfer?.files?.length) {
+    handleFiles(e.dataTransfer.files);
   }
+});
 
-  sheetInput?.addEventListener('blur', () => {
-    const url = sheetInput.value.trim();
-    const id = getSheetIdFromUrl(url);
-    if (id) sheetInput.value = id;
-  });
+dropZone.addEventListener("click", () => fileInput.click());
+fileInput.addEventListener("change", () => handleFiles(fileInput.files));
 
-  async function ensureUnder500KB(file) {
-    let quality = 0.8;
-    let compressed = file;
+// =================== SHEET HELPERS ===================
+function getSheetIdFromUrl(url) {
+  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+  return match ? match[1] : null;
+}
 
-    const compressToJpeg = async (input, q) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        const img = new Image();
+sheetInput?.addEventListener('blur', () => {
+  const url = sheetInput.value.trim();
+  const id = getSheetIdFromUrl(url);
+  if (id) sheetInput.value = id;
+});
 
-        reader.onload = (e) => img.src = e.target.result;
+// =================== UPLOAD HANDLING ===================
+function updateProgress(current, total) {
+  const percent = Math.round((current / total) * 100);
+  progressFill.style.width = `${percent}%`;
+}
 
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let { width, height } = img;
-          const maxW = 1600, maxH = 1600;
+async function ensureUnder500KB(file) {
+  let quality = 0.8;
+  let compressed = file;
 
-          if (width > maxW || height > maxH) {
-            const scale = Math.min(maxW / width, maxH / height);
-            width *= scale;
-            height *= scale;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-
-          canvas.toBlob((blob) => {
-            resolve(new File([blob], `${Date.now()}.jpg`, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            }));
-          }, 'image/jpeg', q);
-        };
-
-        reader.readAsDataURL(input);
-      });
-    };
-
-    let attempts = 0;
-    while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
-      compressed = await compressToJpeg(compressed, quality);
-      quality -= 0.1;
-      attempts++;
-    }
-
-    return compressed;
-  }
-
-  async function uploadAndPasteLinks() {
-    if (!confirmBtn) return;
-
-    confirmBtn.classList.add('uploading');
-    confirmBtn.textContent = 'UPLOADING...';
-    anim.style.opacity = 1;
-    output.value = "";
-    progressFill.style.width = '0%';
-    completedUploads = 0;
-
-    const uploadPromises = filesArray.map(async (file) => {
-      if (file.isPlaceholder) {
-        updateProgress();
-        return "";
-      }
-
-      try {
-        const compressed = await ensureUnder500KB(file.file);
-        const formData = new FormData();
-        formData.append("image", compressed);
-
-        const res = await fetch("/.netlify/functions/upload", {
-          method: "POST",
-          body: formData
-        });
-
-        const data = await res.json();
-        if (!res.ok || !data.url) {
-          console.error("Upload failed:", data);
-          return "";
+  const compressToJpeg = async (input, q) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      const img = new Image();
+      reader.onload = (e) => img.src = e.target.result;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let { width, height } = img;
+        const maxW = 1600, maxH = 1600;
+        if (width > maxW || height > maxH) {
+          const scale = Math.min(maxW / width, maxH / height);
+          width *= scale;
+          height *= scale;
         }
-
-        return data.url;
-      } catch (err) {
-        console.error("Upload error:", err);
-        return "";
-      } finally {
-        updateProgress();
-      }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          resolve(new File([blob], `${Date.now()}.jpg`, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          }));
+        }, 'image/jpeg', q);
+      };
+      reader.readAsDataURL(input);
     });
+  };
 
-    try {
-      const links = await Promise.all(uploadPromises);
-      output.value = links.map(link => link?.split('?')[0] || "").join("\n");
-    } catch (err) {
-      console.error("Critical error:", err);
-      output.value = "Upload failed.";
-    } finally {
-      confirmBtn.classList.remove('uploading');
-      confirmBtn.textContent = 'Confirm Order';
-      anim.style.opacity = 0;
-      dropZone.classList.remove('hover');
-      backdrop.classList.remove('active');
-      dragCounter = 0;
-    }
+  let attempts = 0;
+  while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
+    compressed = await compressToJpeg(compressed, quality);
+    quality -= 0.1;
+    attempts++;
   }
 
-  async function pasteLinksToSheet(destColumn, sourceCell) {
-    const sheetUrl = sheetInput.value.trim();
-    const links = output.value;
+  return compressed;
+}
 
-    const sheetId = (sheetUrl.length === 44 && /^[a-zA-Z0-9-_]+$/.test(sheetUrl))
-      ? sheetUrl
-      : getSheetIdFromUrl(sheetUrl);
+async function uploadAndPasteLinks() {
+  if (!confirmBtn) return;
+  confirmBtn.classList.add('uploading');
+  confirmBtn.textContent = 'UPLOADING...';
+  anim.style.opacity = 1;
+  output.value = "";
+  progressFill.style.width = '0%';
 
-    if (!sheetId || !links) {
-      alert("Please check your Google Sheet URL and upload links first.");
-      return;
+  let completedUploads = 0;
+  const uploadPromises = filesArray.map(async (file) => {
+    if (file.isPlaceholder) {
+      updateProgress(++completedUploads, filesArray.length);
+      return "";
     }
-
-    const payload = {
-      sheetId,
-      links: links.split(/\n/),
-      destColumn,
-      sourceCell
-    };
-
     try {
-      await fetch(`https://corsproxy.io/?${encodeURIComponent(
-        'https://script.google.com/macros/s/AKfycby8mjRAVPgtvHVR4NcMplV4oTaPfOOAJofuKR2Vqt_BzolCc-nxXxVaV8Ry9j1t1J5IyQ/exec'
-      )}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      const compressed = await ensureUnder500KB(file.file);
+      const formData = new FormData();
+      formData.append("image", compressed);
+      const res = await fetch("/.netlify/functions/upload", {
+        method: "POST",
+        body: formData
       });
-
-      const el = document.getElementById('paste-confirm');
-      el.textContent = '✔ Links pasted successfully.';
-      el.style.display = 'flex';
-      el.style.opacity = 1;
-      setTimeout(() => {
-        el.style.opacity = 0;
-        setTimeout(() => {
-          el.style.display = 'none';
-        }, 300);
-      }, 1500);
-    } catch (err) {
-      console.error("Paste error:", err);
+      const data = await res.json();
+      if (!res.ok || !data.url) return "";
+      return data.url;
+    } catch {
+      return "";
+    } finally {
+      updateProgress(++completedUploads, filesArray.length);
     }
+  });
+
+  try {
+    const links = await Promise.all(uploadPromises);
+    output.value = links.map(link => link?.split('?')[0] || "").join("\n");
+  } finally {
+    confirmBtn.classList.remove('uploading');
+    confirmBtn.textContent = 'Confirm Order';
+    anim.style.opacity = 0;
+    dropZone.classList.remove('hover');
+    backdrop.classList.remove('active');
+    dragCounter = 0;
+  }
+}
+
+async function pasteLinksToSheet(destColumn, sourceCell) {
+  const sheetUrl = sheetInput.value.trim();
+  const links = output.value;
+  const sheetId = (sheetUrl.length === 44 && /^[a-zA-Z0-9-_]+$/.test(sheetUrl))
+    ? sheetUrl
+    : getSheetIdFromUrl(sheetUrl);
+
+  if (!sheetId || !links) {
+    alert("Please check your Google Sheet URL and upload links first.");
+    return;
   }
 
-  confirmBtn.addEventListener('click', uploadAndPasteLinks);
+  const payload = {
+    sheetId,
+    links: links.split(/\n/),
+    destColumn,
+    sourceCell
+  };
 
-  document.getElementById('paste-product-image')?.addEventListener('click', () => pasteLinksToSheet('I', 'I2'));
-  document.getElementById('paste-image-ref-1')?.addEventListener('click', () => pasteLinksToSheet('N', 'N2'));
-  document.getElementById('paste-image-ref-2')?.addEventListener('click', () => pasteLinksToSheet('Z', 'Z2'));
-  document.getElementById('paste-image-ref-3')?.addEventListener('click', () => pasteLinksToSheet('AA', 'AA2'));
-  document.getElementById('paste-image-ref-4')?.addEventListener('click', () => pasteLinksToSheet('AB', 'AB2'));
-  document.getElementById('paste-image-ref-5')?.addEventListener('click', () => pasteLinksToSheet('AC', 'AC2'));
-  document.getElementById('paste-image-ref-6')?.addEventListener('click', () => pasteLinksToSheet('AD', 'AD2'));
-  document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
-});
+  try {
+    await fetch(`https://corsproxy.io/?${encodeURIComponent(
+      'https://script.google.com/macros/s/AKfycby8mjRAVPgtvHVR4NcMplV4oTaPfOOAJofuKR2Vqt_BzolCc-nxXxVaV8Ry9j1t1J5IyQ/exec'
+    )}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const el = document.getElementById('paste-confirm');
+    el.style.display = 'flex';
+    el.style.opacity = 1;
+    setTimeout(() => {
+      el.style.opacity = 0;
+      setTimeout(() => { el.style.display = 'none'; }, 300);
+    }, 1500);
+  } catch (err) {
+    console.error("Paste error:", err);
+  }
+}
+
+confirmBtn.addEventListener('click', uploadAndPasteLinks);
+
+// ✅ Paste to specific Google Sheet columns
+document.getElementById('paste-product-image')?.addEventListener('click', () => pasteLinksToSheet('I', 'I2'));
+document.getElementById('paste-image-ref-1')?.addEventListener('click', () => pasteLinksToSheet('N', 'N2'));
+document.getElementById('paste-image-ref-2')?.addEventListener('click', () => pasteLinksToSheet('Z', 'Z2'));
+document.getElementById('paste-image-ref-3')?.addEventListener('click', () => pasteLinksToSheet('AA', 'AA2'));
+document.getElementById('paste-image-ref-4')?.addEventListener('click', () => pasteLinksToSheet('AB', 'AB2'));
+document.getElementById('paste-image-ref-5')?.addEventListener('click', () => pasteLinksToSheet('AC', 'AC2'));
+document.getElementById('paste-image-ref-6')?.addEventListener('click', () => pasteLinksToSheet('AD', 'AD2'));
+document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
 </script>
+
 </body>
 </html>
