@@ -334,6 +334,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let filesArray = [];
   let dragCounter = 0;
   let completedUploads = 0;
+  
+ // ✅ Prevent browser from opening dropped files
+  ['dragover', 'drop'].forEach(eventName => {
+    document.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  });
 
   // ✅ Function to create spotlight hole
   function updateBackdropHole() {
