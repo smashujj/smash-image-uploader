@@ -331,7 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let dragCounter = 0;
   let completedUploads = 0;
 
-  // Generate preview UI
   function updatePreview() {
     preview.innerHTML = '';
     filesArray.forEach((file, index) => {
@@ -341,15 +340,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (file.isPlaceholder) {
         const placeholder = document.createElement('div');
-        placeholder.style.width = '90px';
-        placeholder.style.height = '90px';
-        placeholder.style.display = 'flex';
-        placeholder.style.alignItems = 'center';
-        placeholder.style.justifyContent = 'center';
-        placeholder.style.border = '2px dashed #ccc';
-        placeholder.style.borderRadius = '8px';
-        placeholder.style.color = '#ccc';
-        placeholder.style.fontSize = '12px';
+        Object.assign(placeholder.style, {
+          width: '90px', height: '90px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          border: '2px dashed #ccc', borderRadius: '8px',
+          color: '#ccc', fontSize: '12px'
+        });
         placeholder.textContent = 'EMPTY';
         item.appendChild(placeholder);
       } else {
@@ -367,7 +363,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-button';
       removeBtn.innerHTML = '&times;';
-      removeBtn.onclick = () => {
+      removeBtn.onclick = (e) => {
+        e.preventDefault();
         filesArray.splice(index, 1);
         updatePreview();
       };
@@ -377,7 +374,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // File handling
   function handleFiles(fileList) {
     Array.from(fileList).forEach(file => {
       const reader = new FileReader();
@@ -389,31 +385,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Placeholder add
-  document.getElementById('add-placeholder').addEventListener('click', () => {
+  document.getElementById('add-placeholder')?.addEventListener('click', () => {
     filesArray.push({ isPlaceholder: true });
     updatePreview();
   });
 
-  // Reset images
-  document.getElementById('reset-images').addEventListener('click', () => {
+  document.getElementById('reset-images')?.addEventListener('click', () => {
     filesArray = [];
     fileInput.value = "";
     output.value = "";
     progressFill.style.width = '0%';
     preview.innerHTML = '';
+    dragCounter = 0;
+    backdrop.classList.remove('active');
+    dropZone.classList.remove('hover');
   });
 
-  // Drag events
   document.addEventListener('dragenter', (e) => {
-    if (e.dataTransfer.types[0] !== 'Files') return;
+    if (!e.dataTransfer || !e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
     dragCounter++;
     backdrop.classList.add('active');
     dropZone.classList.add('hover');
   });
 
   document.addEventListener('dragleave', (e) => {
-    if (e.dataTransfer.types[0] !== 'Files') return;
+    if (!e.dataTransfer || !e.dataTransfer.types.includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
     dragCounter--;
     if (dragCounter <= 0) {
       dragCounter = 0;
@@ -422,34 +422,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  window.addEventListener('drop', (e) => {
+  dropZone.addEventListener('click', (e) => {
     e.preventDefault();
-    backdrop.classList.remove('active');
+    e.stopPropagation();
+    fileInput.click();
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.add('hover');
+  });
+
+  dropZone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     dropZone.classList.remove('hover');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove('hover');
+    backdrop.classList.remove('active');
     dragCounter = 0;
     if (e.dataTransfer?.files?.length) {
       handleFiles(e.dataTransfer.files);
     }
   });
 
-  dropZone.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
-  // Sortable setup
   new Sortable(preview, {
     animation: 150,
     onEnd: () => {
       const reordered = [];
       preview.querySelectorAll('.preview-item').forEach(item => {
         const idx = parseInt(item.getAttribute('data-index'), 10);
-        reordered.push(filesArray[idx]);
+        if (!isNaN(idx)) reordered.push(filesArray[idx]);
       });
       filesArray = reordered;
       updatePreview();
     }
   });
 
-  // ===== Upload + Paste Logic (unchanged except cleaned) =====
   async function ensureUnder500KB(file) {
     let quality = 0.8;
     let compressed = file;
@@ -557,5 +573,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
 });
 </script>
+
 </body>
 </html>
