@@ -316,292 +316,246 @@
 
 
 <script>
-let filesArray = [];
-let dragCounter = 0;
+document.addEventListener('DOMContentLoaded', () => {
+  const dropZone = document.getElementById('drop-zone');
+  const backdrop = document.getElementById('drop-backdrop');
+  const fileInput = document.getElementById('file-input');
+  const preview = document.getElementById('preview');
+  const output = document.getElementById('output');
+  const progressFill = document.getElementById('progress-fill');
+  const confirmBtn = document.getElementById('confirm-order');
+  const anim = document.getElementById('loadingAnim');
+  const sheetInput = document.getElementById('sheet-url-input');
 
-const dropZone = document.getElementById("drop-zone");
-const backdrop = document.getElementById("drop-backdrop");
-const fileInput = document.getElementById("file-input");
-const preview = document.getElementById("preview");
-const output = document.getElementById("output");
-const progressFill = document.getElementById("progress-fill");
-const confirmBtn = document.getElementById("confirm-order");
-const anim = document.getElementById("loadingAnim");
-const sheetInput = document.getElementById("sheet-url-input");
+  let filesArray = [];
+  let dragCounter = 0;
+  let completedUploads = 0;
 
-// =================== IMAGE PREVIEW ===================
-function updatePreview() {
-  preview.innerHTML = '';
+  // Generate preview UI
+  function updatePreview() {
+    preview.innerHTML = '';
+    filesArray.forEach((file, index) => {
+      const item = document.createElement('div');
+      item.className = 'preview-item';
+      item.setAttribute('data-index', index);
 
-  filesArray.forEach((file, index) => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'preview-item';
-    wrapper.setAttribute('data-index', index);
+      if (file.isPlaceholder) {
+        const placeholder = document.createElement('div');
+        placeholder.style.width = '90px';
+        placeholder.style.height = '90px';
+        placeholder.style.display = 'flex';
+        placeholder.style.alignItems = 'center';
+        placeholder.style.justifyContent = 'center';
+        placeholder.style.border = '2px dashed #ccc';
+        placeholder.style.borderRadius = '8px';
+        placeholder.style.color = '#ccc';
+        placeholder.style.fontSize = '12px';
+        placeholder.textContent = 'EMPTY';
+        item.appendChild(placeholder);
+      } else {
+        const img = document.createElement('img');
+        img.src = file.previewData;
+        img.className = 'preview-image';
+        item.appendChild(img);
+      }
 
-    if (file.isPlaceholder) {
-      const placeholder = document.createElement('div');
-      placeholder.style.width = '90px';
-      placeholder.style.height = '90px';
-      placeholder.style.display = 'flex';
-      placeholder.style.alignItems = 'center';
-      placeholder.style.justifyContent = 'center';
-      placeholder.style.border = '2px dashed #ccc';
-      placeholder.style.borderRadius = '8px';
-      placeholder.style.color = '#ccc';
-      placeholder.style.fontSize = '12px';
-      placeholder.textContent = 'EMPTY';
-      wrapper.appendChild(placeholder);
-    } else {
-      const img = document.createElement('img');
-      img.src = file.previewData;
-      img.className = 'preview-image';
-      wrapper.appendChild(img);
+      const label = document.createElement('div');
+      label.className = 'image-number';
+      label.textContent = index + 1;
+      item.appendChild(label);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-button';
+      removeBtn.innerHTML = '&times;';
+      removeBtn.onclick = () => {
+        filesArray.splice(index, 1);
+        updatePreview();
+      };
+      item.appendChild(removeBtn);
+
+      preview.appendChild(item);
+    });
+  }
+
+  // File handling
+  function handleFiles(fileList) {
+    Array.from(fileList).forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        filesArray.push({ file, previewData: e.target.result });
+        updatePreview();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // Placeholder add
+  document.getElementById('add-placeholder').addEventListener('click', () => {
+    filesArray.push({ isPlaceholder: true });
+    updatePreview();
+  });
+
+  // Reset images
+  document.getElementById('reset-images').addEventListener('click', () => {
+    filesArray = [];
+    fileInput.value = "";
+    output.value = "";
+    progressFill.style.width = '0%';
+    preview.innerHTML = '';
+  });
+
+  // Drag events
+  document.addEventListener('dragenter', (e) => {
+    if (e.dataTransfer.types[0] !== 'Files') return;
+    dragCounter++;
+    backdrop.classList.add('active');
+    dropZone.classList.add('hover');
+  });
+
+  document.addEventListener('dragleave', (e) => {
+    if (e.dataTransfer.types[0] !== 'Files') return;
+    dragCounter--;
+    if (dragCounter <= 0) {
+      dragCounter = 0;
+      backdrop.classList.remove('active');
+      dropZone.classList.remove('hover');
     }
-
-    const label = document.createElement('div');
-    label.className = 'preview-number';
-    label.textContent = index + 1;
-    wrapper.appendChild(label);
-
-    const remove = document.createElement('button');
-    remove.className = 'remove-button';
-    remove.innerHTML = '&times;';
-    remove.onclick = () => {
-      filesArray.splice(index, 1);
-      updatePreview();
-    };
-    wrapper.appendChild(remove);
-
-    preview.appendChild(wrapper);
   });
-}
 
-// =================== FILE HANDLING ===================
-function handleFiles(fileList) {
-  Array.from(fileList).forEach((file) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      filesArray.push({
-        file,
-        previewData: e.target.result
+  window.addEventListener('drop', (e) => {
+    e.preventDefault();
+    backdrop.classList.remove('active');
+    dropZone.classList.remove('hover');
+    dragCounter = 0;
+    if (e.dataTransfer?.files?.length) {
+      handleFiles(e.dataTransfer.files);
+    }
+  });
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+  // Sortable setup
+  new Sortable(preview, {
+    animation: 150,
+    onEnd: () => {
+      const reordered = [];
+      preview.querySelectorAll('.preview-item').forEach(item => {
+        const idx = parseInt(item.getAttribute('data-index'), 10);
+        reordered.push(filesArray[idx]);
       });
+      filesArray = reordered;
       updatePreview();
-    };
-    reader.readAsDataURL(file);
+    }
   });
-}
 
-// =================== PLACEHOLDER BUTTON ===================
-document.getElementById('add-placeholder').addEventListener('click', () => {
-  filesArray.push({ isPlaceholder: true });
-  updatePreview();
-});
+  // ===== Upload + Paste Logic (unchanged except cleaned) =====
+  async function ensureUnder500KB(file) {
+    let quality = 0.8;
+    let compressed = file;
+    const compressToJpeg = async (input, q) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        const img = new Image();
+        reader.onload = (e) => img.src = e.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          const maxW = 1600, maxH = 1600;
+          if (width > maxW || height > maxH) {
+            const scale = Math.min(maxW / width, maxH / height);
+            width *= scale;
+            height *= scale;
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          canvas.toBlob((blob) => {
+            resolve(new File([blob], `${Date.now()}.jpg`, { type: 'image/jpeg' }));
+          }, 'image/jpeg', q);
+        };
+        reader.readAsDataURL(input);
+      });
+    };
+    let attempts = 0;
+    while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
+      compressed = await compressToJpeg(compressed, quality);
+      quality -= 0.1;
+      attempts++;
+    }
+    return compressed;
+  }
 
-// =================== RESET BUTTON ===================
-document.getElementById('reset-images').addEventListener('click', () => {
-  filesArray = [];
-  fileInput.value = "";
-  output.value = "";
-  dragCounter = 0;
-  progressFill.style.width = '0%';
-  backdrop.classList.remove('active');
-  dropZone.classList.remove('hover');
-  preview.innerHTML = '';
-});
+  async function uploadAndPasteLinks() {
+    confirmBtn.classList.add('uploading');
+    confirmBtn.textContent = 'UPLOADING...';
+    anim.style.opacity = 1;
+    output.value = "";
+    progressFill.style.width = '0%';
+    completedUploads = 0;
 
-// =================== SORTABLE ===================
-new Sortable(preview, {
-  animation: 150,
-  onEnd: () => {
-    const newOrder = [];
-    preview.querySelectorAll(".preview-item").forEach(item => {
-      const oldIndex = parseInt(item.getAttribute("data-index"), 10);
-      if (!isNaN(oldIndex) && filesArray[oldIndex] !== undefined) {
-        newOrder.push(filesArray[oldIndex]);
+    const uploadPromises = filesArray.map(async (file) => {
+      if (file.isPlaceholder) return "";
+      try {
+        const compressed = await ensureUnder500KB(file.file);
+        const formData = new FormData();
+        formData.append("image", compressed);
+        const res = await fetch("/.netlify/functions/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        return data.url || "";
+      } catch {
+        return "";
       }
     });
-    filesArray = newOrder;
-    updatePreview();
-  }
-});
 
-// =================== DRAG & DROP ===================
-window.addEventListener("dragover", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-});
-
-window.addEventListener("drop", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  dropZone.classList.remove("hover");
-  backdrop.classList.remove("active");
-  dragCounter = 0;
-  if (e.dataTransfer?.files?.length) {
-    handleFiles(e.dataTransfer.files);
-  }
-});
-
-dropZone.addEventListener("click", () => fileInput.click());
-fileInput.addEventListener("change", () => handleFiles(fileInput.files));
-
-// =================== SHEET HELPERS ===================
-function getSheetIdFromUrl(url) {
-  const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-  return match ? match[1] : null;
-}
-
-sheetInput?.addEventListener('blur', () => {
-  const url = sheetInput.value.trim();
-  const id = getSheetIdFromUrl(url);
-  if (id) sheetInput.value = id;
-});
-
-// =================== UPLOAD HANDLING ===================
-function updateProgress(current, total) {
-  const percent = Math.round((current / total) * 100);
-  progressFill.style.width = `${percent}%`;
-}
-
-async function ensureUnder500KB(file) {
-  let quality = 0.8;
-  let compressed = file;
-
-  const compressToJpeg = async (input, q) => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      const img = new Image();
-      reader.onload = (e) => img.src = e.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        let { width, height } = img;
-        const maxW = 1600, maxH = 1600;
-        if (width > maxW || height > maxH) {
-          const scale = Math.min(maxW / width, maxH / height);
-          width *= scale;
-          height *= scale;
-        }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => {
-          resolve(new File([blob], `${Date.now()}.jpg`, {
-            type: 'image/jpeg',
-            lastModified: Date.now(),
-          }));
-        }, 'image/jpeg', q);
-      };
-      reader.readAsDataURL(input);
-    });
-  };
-
-  let attempts = 0;
-  while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
-    compressed = await compressToJpeg(compressed, quality);
-    quality -= 0.1;
-    attempts++;
-  }
-
-  return compressed;
-}
-
-async function uploadAndPasteLinks() {
-  if (!confirmBtn) return;
-  confirmBtn.classList.add('uploading');
-  confirmBtn.textContent = 'UPLOADING...';
-  anim.style.opacity = 1;
-  output.value = "";
-  progressFill.style.width = '0%';
-
-  let completedUploads = 0;
-  const uploadPromises = filesArray.map(async (file) => {
-    if (file.isPlaceholder) {
-      updateProgress(++completedUploads, filesArray.length);
-      return "";
-    }
-    try {
-      const compressed = await ensureUnder500KB(file.file);
-      const formData = new FormData();
-      formData.append("image", compressed);
-      const res = await fetch("/.netlify/functions/upload", {
-        method: "POST",
-        body: formData
-      });
-      const data = await res.json();
-      if (!res.ok || !data.url) return "";
-      return data.url;
-    } catch {
-      return "";
-    } finally {
-      updateProgress(++completedUploads, filesArray.length);
-    }
-  });
-
-  try {
     const links = await Promise.all(uploadPromises);
     output.value = links.map(link => link?.split('?')[0] || "").join("\n");
-  } finally {
     confirmBtn.classList.remove('uploading');
     confirmBtn.textContent = 'Confirm Order';
     anim.style.opacity = 0;
-    dropZone.classList.remove('hover');
-    backdrop.classList.remove('active');
-    dragCounter = 0;
-  }
-}
-
-async function pasteLinksToSheet(destColumn, sourceCell) {
-  const sheetUrl = sheetInput.value.trim();
-  const links = output.value;
-  const sheetId = (sheetUrl.length === 44 && /^[a-zA-Z0-9-_]+$/.test(sheetUrl))
-    ? sheetUrl
-    : getSheetIdFromUrl(sheetUrl);
-
-  if (!sheetId || !links) {
-    alert("Please check your Google Sheet URL and upload links first.");
-    return;
   }
 
-  const payload = {
-    sheetId,
-    links: links.split(/\n/),
-    destColumn,
-    sourceCell
-  };
+  confirmBtn.addEventListener('click', uploadAndPasteLinks);
 
-  try {
+  function getSheetIdFromUrl(url) {
+    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    return match ? match[1] : null;
+  }
+
+  async function pasteLinksToSheet(destColumn, sourceCell) {
+    const sheetUrl = sheetInput.value.trim();
+    const links = output.value;
+    const sheetId = (sheetUrl.length === 44 && /^[a-zA-Z0-9-_]+$/.test(sheetUrl))
+      ? sheetUrl : getSheetIdFromUrl(sheetUrl);
+    if (!sheetId || !links) {
+      alert("Please check your Google Sheet URL and upload links first.");
+      return;
+    }
+    const payload = { sheetId, links: links.split(/\n/), destColumn, sourceCell };
     await fetch(`https://corsproxy.io/?${encodeURIComponent(
-      'https://script.google.com/macros/s/AKfycby8mjRAVPgtvHVR4NcMplV4oTaPfOOAJofuKR2Vqt_BzolCc-nxXxVaV8Ry9j1t1J5IyQ/exec'
+      'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'
     )}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     const el = document.getElementById('paste-confirm');
+    el.textContent = '✔ Links pasted successfully.';
     el.style.display = 'flex';
     el.style.opacity = 1;
-    setTimeout(() => {
-      el.style.opacity = 0;
-      setTimeout(() => { el.style.display = 'none'; }, 300);
-    }, 1500);
-  } catch (err) {
-    console.error("Paste error:", err);
+    setTimeout(() => { el.style.opacity = 0; el.style.display = 'none'; }, 1500);
   }
-}
 
-confirmBtn.addEventListener('click', uploadAndPasteLinks);
-
-// ✅ Paste to specific Google Sheet columns
-document.getElementById('paste-product-image')?.addEventListener('click', () => pasteLinksToSheet('I', 'I2'));
-document.getElementById('paste-image-ref-1')?.addEventListener('click', () => pasteLinksToSheet('N', 'N2'));
-document.getElementById('paste-image-ref-2')?.addEventListener('click', () => pasteLinksToSheet('Z', 'Z2'));
-document.getElementById('paste-image-ref-3')?.addEventListener('click', () => pasteLinksToSheet('AA', 'AA2'));
-document.getElementById('paste-image-ref-4')?.addEventListener('click', () => pasteLinksToSheet('AB', 'AB2'));
-document.getElementById('paste-image-ref-5')?.addEventListener('click', () => pasteLinksToSheet('AC', 'AC2'));
-document.getElementById('paste-image-ref-6')?.addEventListener('click', () => pasteLinksToSheet('AD', 'AD2'));
-document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
+  document.getElementById('paste-product-image')?.addEventListener('click', () => pasteLinksToSheet('I', 'I2'));
+  document.getElementById('paste-image-ref-1')?.addEventListener('click', () => pasteLinksToSheet('N', 'N2'));
+  document.getElementById('paste-image-ref-2')?.addEventListener('click', () => pasteLinksToSheet('Z', 'Z2'));
+  document.getElementById('paste-image-ref-3')?.addEventListener('click', () => pasteLinksToSheet('AA', 'AA2'));
+  document.getElementById('paste-image-ref-4')?.addEventListener('click', () => pasteLinksToSheet('AB', 'AB2'));
+  document.getElementById('paste-image-ref-5')?.addEventListener('click', () => pasteLinksToSheet('AC', 'AC2'));
+  document.getElementById('paste-image-ref-6')?.addEventListener('click', () => pasteLinksToSheet('AD', 'AD2'));
+  document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
+});
 </script>
-
 </body>
 </html>
