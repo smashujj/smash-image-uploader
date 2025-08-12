@@ -380,7 +380,6 @@ function generateRandomName(length = 4) {
 // =================== PREVIEW RENDERING ===================
 function updatePreview(resetNumbers = false) {
     preview.innerHTML = '';
-
     filesArray.forEach((file, i) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'preview-wrapper';
@@ -406,19 +405,19 @@ function updatePreview(resetNumbers = false) {
             wrapper.appendChild(img);
         }
 
-        // Add number label
+        // Number label
         const label = document.createElement('div');
         label.className = 'preview-number';
-        label.textContent = i + 1;
+        label.textContent = resetNumbers ? (i + 1) : (file.number || i + 1);
         wrapper.appendChild(label);
 
-        // Add remove button
+        // Remove button
         const remove = document.createElement('button');
         remove.className = 'remove-button';
-        remove.textContent = '✖';
+        remove.textContent = '×';
         remove.onclick = () => {
             filesArray.splice(i, 1);
-            updatePreview(true);
+            updatePreview(true); // Renumber after removal
         };
         wrapper.appendChild(remove);
 
@@ -445,7 +444,6 @@ const handleFiles = async (files) => {
     filesArray.push(renamedFile);
   }
 
-  filesArray.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
   updatePreview();
 };
 
@@ -604,25 +602,23 @@ window.addEventListener('DOMContentLoaded', () => {
     animation: 150,
     onStart: () => { isSorting = true; },
     onEnd: () => {
-    isSorting = false;
-    dragCounter = 0;
-    backdrop.classList.remove('active');
-    dropZone.classList.remove('hover');
+        isSorting = false;
+        dragCounter = 0;
+        backdrop.classList.remove('active');
+        dropZone.classList.remove('hover');
 
-    const children = Array.from(preview.children);
-    filesArray = children.map(child => {
-        const img = child.querySelector('img');
-        if (img) {
-            return filesArray.find(f => !f.isPlaceholder && f.previewData === img.src);
-        } else {
-            return filesArray.find(f => f.isPlaceholder);
-        }
-    }).filter(Boolean);
+        const children = Array.from(preview.children);
+        const newOrder = children.map(child => {
+            const img = child.querySelector('img');
+            return img
+                ? filesArray.find(f => !f.isPlaceholder && f.previewData === img.src)
+                : filesArray.find(f => f.isPlaceholder);
+        }).filter(Boolean);
 
-    updatePreview(true);
+        filesArray = newOrder;
+        updatePreview(true); // Renumber after sorting
     }
-  });
-
+});
   window.addEventListener("dragover", (e) => {
     e.preventDefault();
     e.stopPropagation();
