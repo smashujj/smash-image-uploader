@@ -553,16 +553,24 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 }
 
-  function handleFiles(fileList) {
-    Array.from(fileList).forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        filesArray.push({ file, previewData: e.target.result });
-        updatePreview();
-      };
-      reader.readAsDataURL(file);
-    });
+ function handleFiles(fileList) {
+  // ✅ Ensure we're starting from scratch after reset
+  if (filesArray.length === 0 && preview.innerHTML.trim() === '') {
+    filesArray = [];
   }
+
+  Array.from(fileList).forEach((file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      filesArray.push({
+        file,
+        previewData: e.target.result
+      });
+      updatePreview();
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
   document.getElementById('add-placeholder').addEventListener('click', () => {
     filesArray.push({ isPlaceholder: true });
@@ -570,26 +578,29 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 
   document.getElementById('reset-images').addEventListener('click', () => {
-  // Clear all stored files
+  // ✅ Clear all stored files
   filesArray = [];
 
-  // Reset file input and output
+  // ✅ Clear Sortable's data-index references
+  preview.querySelectorAll('.preview-item').forEach(item => {
+    item.removeAttribute('data-index');
+  });
+
+  // ✅ Reset file input and output
   fileInput.value = "";
   output.value = "";
 
-  // Reset drag counter and progress bar
+  // ✅ Reset drag counter and progress bar
   dragCounter = 0;
   progressFill.style.width = '0%';
 
-  // Remove active/hover styles
+  // ✅ Remove active/hover styles
   backdrop.classList.remove('active');
   dropZone.classList.remove('hover');
 
-  // Clear the preview display entirely
+  // ✅ Clear the preview display entirely
   preview.innerHTML = '';
 });
-
-
 
   document.addEventListener('dragenter', (e) => {
     if (isSorting || e.dataTransfer.types[0] !== 'Files') return;
