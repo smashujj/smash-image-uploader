@@ -8,79 +8,87 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
  <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js" type="module"></script>
- <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: url('https://images.unsplash.com/photo-1614850523011-8f49ffc73908?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') no-repeat center center fixed;
-      background-size: cover;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 40px 20px;
-      min-height: 100vh;
-    }
-  
-    #logo {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      height: 40px;
-      filter: brightness(0) invert(1);
-    }
-    h1 {
-      font-size: 3rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    p {
-      color: #E0E0E0;
-      font-size: 1rem;
-      margin-bottom: 48px;
-    }
-    #drop-zone {
-      border: 1px dashed #ffffff;
-      border-radius: 16px;
-      border-spacing: 6px;
-      background-color: rgba(0, 0, 0, 0.4);
-      width: 100%;
-      max-width: 700px;
-      padding: 40px;
-      text-align: center;
-      margin-bottom: 40px;
-      margin-top: 30px;
-      cursor: pointer;
-    }
-    #drop-zone.hover {
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: url('https://images.unsplash.com/photo-1614850523011-8f49ffc73908?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0') no-repeat center center fixed;
+  background-size: cover;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 40px 20px;
+  min-height: 100vh;
+}
+
+#logo {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  height: 40px;
+  filter: brightness(0) invert(1);
+}
+
+h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+p {
+  color: #E0E0E0;
+  font-size: 1rem;
+  margin-bottom: 48px;
+}
+
+/* Drop Zone */
+#drop-zone {
+  border: 1px dashed #ffffff;
+  border-radius: 16px;
+  background-color: rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 700px;
+  padding: 40px;
+  text-align: center;
+  margin: 30px 0 40px 0;
+  cursor: pointer;
+  position: relative;
+  z-index: 999; /* stays on top of backdrop */
+}
+
+#drop-zone.hover {
   box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.807);
   transition: box-shadow 0.3s ease;
 }
-#add-placeholder {
-  background: #888888;
-  transition: background-color 0.3s ease;
+
+/* Backdrop Overlay with spotlight hole */
+#drop-backdrop {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+  z-index: 998; /* behind drop-zone */
+  pointer-events: none;
+  clip-path: none; /* updated dynamically */
 }
-#add-placeholder:hover {
-  background: #666666; /* Darker gray on hover */
+#drop-backdrop.active {
+  opacity: 1;
+  visibility: visible;
 }
 
-#reset-images {
-  background: #ef4444; /* Red */
-  transition: background-color 0.3s ease;
-}
-#reset-images:hover {
-  background: #b91c1c; /* Darker red on hover */
-}
-
-
-    input[type="file"] { display: none; }
-   .button {
+/* Buttons */
+.button {
   background: #3b82f6;
   color: white;
   font-size: 0.75rem;
   font-weight: 600;
-  font-family: 'Outfit', sans-serif; /* ✅ Add this line */
+  font-family: 'Outfit', sans-serif;
   padding: 10px 20px;
   border: none;
   border-radius: 8px;
@@ -89,157 +97,154 @@
   letter-spacing: 1.5px;
   text-transform: uppercase;
 }
-    .button:hover { background: #2563eb; }
-    textarea {
-      width: 100%;
-      max-width: 700px;
-      height: 200px;
-      padding: 12px;
-      font-family: monospace;
-      font-size: 14px;
-      background: rgba(0, 0, 0, 0.5);
-      color: #ffffff;
-      border: none;
-      border-radius: 12px;
-      resize: none;
-      margin-top: 30px;
-    }
-    #preview {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      gap: 10px;
-      max-width: 700px;
-      margin: 0 auto 20px auto;
-    }
-    .preview-wrapper {
-      position: relative;
-    }
-    .preview-image {
+.button:hover { background: #2563eb; }
+
+#add-placeholder {
+  background: #888888;
+  transition: background-color 0.3s ease;
+}
+#add-placeholder:hover { background: #666666; }
+
+#reset-images {
+  background: #ef4444;
+  transition: background-color 0.3s ease;
+}
+#reset-images:hover { background: #b91c1c; }
+
+.button.uploading {
+  background-color: #b8b8b8 !important;
+  color: black;  
+}
+
+/* Input & Textarea */
+input[type="file"] { display: none; }
+textarea {
+  width: 100%;
+  max-width: 700px;
+  height: 200px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  resize: none;
+  margin-top: 30px;
+}
+#sheet-url-input::placeholder {
+  color: #000000;
+  opacity: 0.2;
+  font-style: italic;
+}
+
+/* Preview Items */
+#preview {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 10px;
+  max-width: 700px;
+  margin: 0 auto 20px auto;
+}
+.preview-item {
+  position: relative;
+  display: inline-block;
+  margin: 5px;
+}
+.preview-image {
   width: 90px;
   height: 90px;
-      object-fit: cover;
-      border-radius: 8px;
-      cursor: move;
-    }
-    .remove-button {
-      position: absolute;
-      top: -6px;
-      right: -6px;
-      background: red;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .preview-number {
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: move;
+}
+.image-number {
   position: absolute;
   bottom: -6px;
   left: -6px;
-  background: #0051ff;
-  color: #ffffff;
+  background: #007BFF;
+  color: #fff;
+  border-radius: 50%;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  font-weight: bold;
   font-size: 12px;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
 }
-
-    #lottie {
-      opacity: 0;
-      transition: opacity 0.5s ease;
-      padding: 40px 0;
-    }
-    #lottie img {
-      height: 64px;
-    }
-    #progress-bar {
-      width: 100%;
-      max-width: 700px;
-      height: 6px;
-      background-color: rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
-      overflow: hidden;
-      margin: 20px 0;
-    }
-    #progress-fill {
-      height: 100%;
-      background-color: white;
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-  
-    .button.uploading {
-  background-color: #b8b8b8 !important; /* Yellow */
-  color: black;  
+.remove-button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 16px;
 }
 
+/* Progress Bar */
+#lottie {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  padding: 40px 0;
+}
+#lottie img { height: 64px; }
+
+#progress-bar {
+  width: 100%;
+  max-width: 700px;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 20px 0;
+}
+#progress-fill {
+  height: 100%;
+  background-color: white;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* Button Grid */
 #button-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  column-gap: 16px;   /* smaller horizontal space between columns */
-  row-gap: 0px;      /* tighter vertical space between rows */
+  column-gap: 16px;
+  row-gap: 0px;
   margin: 40px auto 0 auto;
   max-width: 700px;
   width: 100%;
   padding: 0 10px;
   box-sizing: border-box;
 }
-
-
 #button-grid .button {
   width: 100%;
-  font-size: 0.7rem; /* smaller text */
+  font-size: 0.7rem;
   padding: 10px 12px;
   letter-spacing: 1px;
 }
-#sheet-url-input::placeholder {
-  color: #000000;
-  opacity: 0.2;
-   font-style: italic;
-}
+
+/* Accessibility Focus */
 @keyframes pulseFade {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
- body.user-is-tabbing *:focus {
+body.user-is-tabbing *:focus {
   outline: 2px solid white;
   box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.6);
 }
-  body:not(.user-is-tabbing) *:focus {
-    outline: none;
-  }
- #drop-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.6); /* darken */
-  z-index: 999; /* Just below drop-zone */
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
+body:not(.user-is-tabbing) *:focus { outline: none; }
+</style>
 
-#drop-backdrop.active {
-  opacity: 1;
-}
-
-/* Make sure drop-zone is ABOVE the backdrop */
-#drop-zone {
-  position: relative;
-  z-index: 1000;
-}
-
-  </style>
 </head>
 <body>
   <div id="drop-backdrop"></div>
@@ -328,14 +333,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let filesArray = [];
   let dragCounter = 0;
+  let completedUploads = 0;
 
-  // === UPDATE PREVIEW ===
+  // ✅ Function to create spotlight hole
+  function updateBackdropHole() {
+    const rect = dropZone.getBoundingClientRect();
+    const padding = 10;
+    const top = rect.top - padding;
+    const left = rect.left - padding;
+    const right = rect.right + padding;
+    const bottom = rect.bottom + padding;
+
+    backdrop.style.clipPath = `polygon(
+      0% 0%, 100% 0%, 100% 100%, 0% 100%,
+      0% 0%, ${left}px 0%, ${left}px ${top}px, ${right}px ${top}px,
+      ${right}px ${bottom}px, ${left}px ${bottom}px, ${left}px 0%
+    )`;
+  }
+
+  // ✅ Generate preview UI
   function updatePreview() {
     preview.innerHTML = '';
     filesArray.forEach((file, index) => {
-      const wrapper = document.createElement('div');
-      wrapper.className = 'preview-item';
-      wrapper.setAttribute('data-index', index);
+      const item = document.createElement('div');
+      item.className = 'preview-item';
+      item.setAttribute('data-index', index);
 
       if (file.isPlaceholder) {
         const placeholder = document.createElement('div');
@@ -349,22 +371,19 @@ document.addEventListener('DOMContentLoaded', () => {
         placeholder.style.color = '#ccc';
         placeholder.style.fontSize = '12px';
         placeholder.textContent = 'EMPTY';
-        wrapper.appendChild(placeholder);
+        item.appendChild(placeholder);
       } else {
         const img = document.createElement('img');
         img.src = file.previewData;
         img.className = 'preview-image';
-        img.draggable = false; // prevent opening in tab
-        wrapper.appendChild(img);
+        item.appendChild(img);
       }
 
-      // Number label (bottom-left)
       const label = document.createElement('div');
       label.className = 'image-number';
       label.textContent = index + 1;
-      wrapper.appendChild(label);
+      item.appendChild(label);
 
-      // Remove button (top-right)
       const removeBtn = document.createElement('button');
       removeBtn.className = 'remove-button';
       removeBtn.innerHTML = '&times;';
@@ -372,13 +391,13 @@ document.addEventListener('DOMContentLoaded', () => {
         filesArray.splice(index, 1);
         updatePreview();
       };
-      wrapper.appendChild(removeBtn);
+      item.appendChild(removeBtn);
 
-      preview.appendChild(wrapper);
+      preview.appendChild(item);
     });
   }
 
-  // === HANDLE FILES ===
+  // ✅ File handling
   function handleFiles(fileList) {
     Array.from(fileList).forEach(file => {
       const reader = new FileReader();
@@ -390,13 +409,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // === ADD PLACEHOLDER ===
+  // ✅ Add placeholder
   document.getElementById('add-placeholder').addEventListener('click', () => {
     filesArray.push({ isPlaceholder: true });
     updatePreview();
   });
 
-  // === RESET ===
+  // ✅ Reset images
   document.getElementById('reset-images').addEventListener('click', () => {
     filesArray = [];
     fileInput.value = "";
@@ -405,26 +424,23 @@ document.addEventListener('DOMContentLoaded', () => {
     preview.innerHTML = '';
   });
 
-  // === DRAG ENTER / LEAVE BACKDROP ===
+  // ✅ Drag events
   document.addEventListener('dragenter', (e) => {
-    if (!e.dataTransfer.types.includes('Files')) return;
+    if (e.dataTransfer?.types[0] !== 'Files') return;
     dragCounter++;
+    updateBackdropHole();
     backdrop.classList.add('active');
     dropZone.classList.add('hover');
   });
 
   document.addEventListener('dragleave', (e) => {
-    if (!e.dataTransfer.types.includes('Files')) return;
+    if (e.dataTransfer?.types[0] !== 'Files') return;
     dragCounter--;
     if (dragCounter <= 0) {
       dragCounter = 0;
       backdrop.classList.remove('active');
       dropZone.classList.remove('hover');
     }
-  });
-
-  window.addEventListener('dragover', (e) => {
-    e.preventDefault();
   });
 
   window.addEventListener('drop', (e) => {
@@ -440,9 +456,11 @@ document.addEventListener('DOMContentLoaded', () => {
   dropZone.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
-  // === SORTABLE ===
+  window.addEventListener('resize', updateBackdropHole);
+
+  // ✅ Sortable setup - no flying images
   new Sortable(preview, {
-    animation: 150,
+    animation: 0,
     onEnd: () => {
       const reordered = [];
       preview.querySelectorAll('.preview-item').forEach(item => {
@@ -454,7 +472,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // === COMPRESSION ===
+  // ✅ Compress image before upload
   async function ensureUnder500KB(file) {
     let quality = 0.8;
     let compressed = file;
@@ -492,14 +510,14 @@ document.addEventListener('DOMContentLoaded', () => {
     return compressed;
   }
 
-  // === UPLOAD ===
+  // ✅ Upload + paste
   async function uploadAndPasteLinks() {
     confirmBtn.classList.add('uploading');
     confirmBtn.textContent = 'UPLOADING...';
     anim.style.opacity = 1;
     output.value = "";
     progressFill.style.width = '0%';
-    let completed = 0;
+    completedUploads = 0;
 
     const uploadPromises = filesArray.map(async (file) => {
       if (file.isPlaceholder) return "";
@@ -509,8 +527,6 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append("image", compressed);
         const res = await fetch("/.netlify/functions/upload", { method: "POST", body: formData });
         const data = await res.json();
-        completed++;
-        progressFill.style.width = `${(completed / filesArray.length) * 100}%`;
         return data.url || "";
       } catch {
         return "";
@@ -526,7 +542,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   confirmBtn.addEventListener('click', uploadAndPasteLinks);
 
-  // === SHEET PASTE ===
   function getSheetIdFromUrl(url) {
     const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
     return match ? match[1] : null;
@@ -550,7 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
       body: JSON.stringify(payload)
     });
     const el = document.getElementById('paste-confirm');
-    el.textContent = '✔ LINKS PASTED';
+    el.textContent = '✔ Links pasted successfully.';
     el.style.display = 'flex';
     el.style.opacity = 1;
     setTimeout(() => { el.style.opacity = 0; el.style.display = 'none'; }, 1500);
@@ -566,54 +581,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
 });
 </script>
-
-<style>
-#drop-backdrop {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.3s ease;
-  z-index: 9998;
-}
-#drop-backdrop.active {
-  opacity: 1;
-  visibility: visible;
-}
-.preview-item {
-  position: relative;
-  display: inline-block;
-  margin: 5px;
-}
-.image-number {
-  position: absolute;
-  bottom: 5px;
-  left: 5px;
-  background: #007BFF;
-  color: #fff;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.remove-button {
-  position: absolute;
-  top: 3px;
-  right: 3px;
-  background: red;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 18px;
-  height: 18px;
-  font-size: 14px;
-  cursor: pointer;
-  line-height: 16px;
-}
-</style>
 </body>
 </html>
