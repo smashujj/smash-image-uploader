@@ -318,7 +318,6 @@ body:not(.user-is-tabbing) *:focus { outline: none; }
   <button id="paste-image-ref-6" class="button">Paste as Image Ref 6</button>
   <button id="paste-image-ref-7" class="button">Paste as Image Ref 7</button>
 </div>
-
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const dropZone = document.getElementById('drop-zone');
@@ -335,7 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let dragCounter = 0;
   let completedUploads = 0;
 
-  // ✅ Prevent browser from opening dropped files
+  // ✅ Prevent browser from opening dropped files anywhere
   ['dragover', 'drop'].forEach(eventName => {
     document.addEventListener(eventName, (e) => {
       e.preventDefault();
@@ -405,10 +404,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ File handling (keeps file explorer order)
+  // ✅ File handling (preserves OS order)
   function handleFiles(fileList) {
-    const sortedFiles = Array.from(fileList).sort((a, b) => a.lastModified - b.lastModified);
-    sortedFiles.forEach(file => {
+    const orderedFiles = Array.from(fileList);
+    orderedFiles.forEach(file => {
       const reader = new FileReader();
       reader.onload = (e) => {
         filesArray.push({ file, previewData: e.target.result });
@@ -454,6 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // ✅ Drop handler (preserve OS order, global drop)
   document.addEventListener('drop', (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -461,7 +461,18 @@ document.addEventListener('DOMContentLoaded', () => {
     dropZone.classList.remove('hover');
     dragCounter = 0;
 
-    if (e.dataTransfer?.files?.length) {
+    const items = e.dataTransfer?.items;
+    if (items && items.length) {
+      const fileArray = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) fileArray.push(file);
+        }
+      }
+      handleFiles(fileArray);
+    } else if (e.dataTransfer?.files?.length) {
       handleFiles(e.dataTransfer.files);
     }
   });
@@ -594,6 +605,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
 });
 </script>
-
 </body>
 </html>
