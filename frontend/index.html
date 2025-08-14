@@ -318,6 +318,7 @@ body:not(.user-is-tabbing) *:focus { outline: none; }
   <button id="paste-image-ref-6" class="button">Paste as Image Ref 6</button>
   <button id="paste-image-ref-7" class="button">Paste as Image Ref 7</button>
 </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const dropZone = document.getElementById('drop-zone');
@@ -339,13 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const input = this.value.trim();
     const match = input.match(/\/d\/([a-zA-Z0-9-_]+)/);
     cleanedSheetId = match ? match[1] : input;
-  });
-
-  ['dragover', 'drop'].forEach(eventName => {
-    document.addEventListener(eventName, (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    });
   });
 
   function updateBackdropHole() {
@@ -372,17 +366,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (file.isPlaceholder) {
         const placeholder = document.createElement('div');
-        Object.assign(placeholder.style, {
-          width: '90px',
-          height: '90px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          border: '2px dashed #ccc',
-          borderRadius: '8px',
-          color: '#ccc',
-          fontSize: '12px'
-        });
+        placeholder.style.width = '90px';
+        placeholder.style.height = '90px';
+        placeholder.style.display = 'flex';
+        placeholder.style.alignItems = 'center';
+        placeholder.style.justifyContent = 'center';
+        placeholder.style.border = '2px dashed #ccc';
+        placeholder.style.borderRadius = '8px';
+        placeholder.style.color = '#ccc';
+        placeholder.style.fontSize = '12px';
         placeholder.textContent = 'EMPTY';
         item.appendChild(placeholder);
       } else {
@@ -496,52 +488,41 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   async function ensureUnder500KB(file) {
-  const compressToJpeg = async (input, quality) => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
+    let quality = 0.8;
+    let compressed = file;
+    const compressToJpeg = async (input, q) => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
         const img = new Image();
+        reader.onload = (e) => img.src = e.target.result;
         img.onload = () => {
+          const canvas = document.createElement('canvas');
           let { width, height } = img;
           const maxW = 1600, maxH = 1600;
-
-          // ⛏ Resize if too big
           if (width > maxW || height > maxH) {
             const scale = Math.min(maxW / width, maxH / height);
             width = Math.round(width * scale);
             height = Math.round(height * scale);
           }
-
-          const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-
           canvas.toBlob((blob) => {
             resolve(new File([blob], `${Date.now()}.jpg`, { type: 'image/jpeg' }));
-          }, 'image/jpeg', quality);
+          }, 'image/jpeg', q);
         };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(input);
-    });
-  };
-
-  // Try compressing multiple times until under 500KB
-  let quality = 0.9;
-  let compressed = await compressToJpeg(file, quality);
-  let attempts = 0;
-
-  while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 5) {
-    quality -= 0.1;
-    compressed = await compressToJpeg(file, quality);
-    attempts++;
+        reader.readAsDataURL(input);
+      });
+    };
+    let attempts = 0;
+    while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
+      compressed = await compressToJpeg(compressed, quality);
+      quality -= 0.1;
+      attempts++;
+    }
+    return compressed;
   }
-
-  return compressed;
-}
-
 
   async function uploadAndPasteLinks() {
     confirmBtn.classList.add('uploading');
@@ -575,20 +556,21 @@ document.addEventListener('DOMContentLoaded', () => {
   confirmBtn.addEventListener('click', uploadAndPasteLinks);
 
   async function pasteLinksToSheet(destColumn, sourceCell) {
-    const links = output.value;
     const sheetId = cleanedSheetId;
+    const links = output.value;
     if (!sheetId || !links) {
       alert("Please check your Google Sheet URL and upload links first.");
       return;
     }
     const payload = { sheetId, links: links.split(/\n/), destColumn, sourceCell };
     await fetch(`https://corsproxy.io/?${encodeURIComponent(
-      'https://script.google.com/macros/s/AKfycby8mjRAVPgtvHVR4NcMplV4oTaPfOOAJofuKR2Vqt_BzolCc-nxXxVaV8Ry9j1t1J5IyQ/exec'
+      'https://script.google.com/macros/s/AKfycbzEyBVkE4m6oD1DX5Dyi-7SrXSX9Ye7_Nw7ytADudiHxhKZXzy1mlQGFzZKMjURgZ4u/exec'
     )}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+
     const el = document.getElementById('paste-confirm');
     el.textContent = '✔ Links pasted successfully.';
     el.style.display = 'flex';
