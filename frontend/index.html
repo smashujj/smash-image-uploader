@@ -333,8 +333,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let filesArray = [];
   let dragCounter = 0;
   let completedUploads = 0;
+  let cleanedSheetId = "";
 
-  // ✅ Prevent browser from opening dropped files anywhere
+  sheetInput.addEventListener("input", function () {
+    const input = this.value.trim();
+    const match = input.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    cleanedSheetId = match ? match[1] : input;
+  });
+
   ['dragover', 'drop'].forEach(eventName => {
     document.addEventListener(eventName, (e) => {
       e.preventDefault();
@@ -342,7 +348,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ✅ Create spotlight hole in overlay
   function updateBackdropHole() {
     const rect = dropZone.getBoundingClientRect();
     const padding = 10;
@@ -358,7 +363,6 @@ document.addEventListener('DOMContentLoaded', () => {
     )`;
   }
 
-  // ✅ Generate preview UI
   function updatePreview() {
     preview.innerHTML = '';
     filesArray.forEach((file, index) => {
@@ -368,15 +372,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (file.isPlaceholder) {
         const placeholder = document.createElement('div');
-        placeholder.style.width = '90px';
-        placeholder.style.height = '90px';
-        placeholder.style.display = 'flex';
-        placeholder.style.alignItems = 'center';
-        placeholder.style.justifyContent = 'center';
-        placeholder.style.border = '2px dashed #ccc';
-        placeholder.style.borderRadius = '8px';
-        placeholder.style.color = '#ccc';
-        placeholder.style.fontSize = '12px';
+        Object.assign(placeholder.style, {
+          width: '90px',
+          height: '90px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '2px dashed #ccc',
+          borderRadius: '8px',
+          color: '#ccc',
+          fontSize: '12px'
+        });
         placeholder.textContent = 'EMPTY';
         item.appendChild(placeholder);
       } else {
@@ -404,7 +410,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ File handling (preserves OS order)
   function handleFiles(fileList) {
     const orderedFiles = Array.from(fileList);
     orderedFiles.forEach(file => {
@@ -417,13 +422,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ Add placeholder
   document.getElementById('add-placeholder').addEventListener('click', () => {
     filesArray.push({ isPlaceholder: true });
     updatePreview();
   });
 
-  // ✅ Reset images
   document.getElementById('reset-images').addEventListener('click', () => {
     filesArray = [];
     fileInput.value = "";
@@ -432,7 +435,6 @@ document.addEventListener('DOMContentLoaded', () => {
     preview.innerHTML = '';
   });
 
-  // ✅ Global drag events
   document.addEventListener('dragenter', (e) => {
     if (e.dataTransfer?.types?.includes('Files')) {
       dragCounter++;
@@ -453,7 +455,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ✅ Drop handler (preserve OS order, global drop)
   document.addEventListener('drop', (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -479,10 +480,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   dropZone.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-
   window.addEventListener('resize', updateBackdropHole);
 
-  // ✅ Sortable setup - no flying images
   new Sortable(preview, {
     animation: 0,
     onEnd: () => {
@@ -496,7 +495,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // ✅ Compress image before upload
   async function ensureUnder500KB(file) {
     let quality = 0.8;
     let compressed = file;
@@ -534,7 +532,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return compressed;
   }
 
-  // ✅ Upload + paste
   async function uploadAndPasteLinks() {
     confirmBtn.classList.add('uploading');
     confirmBtn.textContent = 'UPLOADING...';
@@ -566,23 +563,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   confirmBtn.addEventListener('click', uploadAndPasteLinks);
 
-  function getSheetIdFromUrl(url) {
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    return match ? match[1] : null;
-  }
-
   async function pasteLinksToSheet(destColumn, sourceCell) {
-    const sheetUrl = sheetInput.value.trim();
     const links = output.value;
-    const sheetId = (sheetUrl.length === 44 && /^[a-zA-Z0-9-_]+$/.test(sheetUrl))
-      ? sheetUrl : getSheetIdFromUrl(sheetUrl);
+    const sheetId = cleanedSheetId;
     if (!sheetId || !links) {
       alert("Please check your Google Sheet URL and upload links first.");
       return;
     }
     const payload = { sheetId, links: links.split(/\n/), destColumn, sourceCell };
     await fetch(`https://corsproxy.io/?${encodeURIComponent(
-      'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec'
+      'https://script.google.com/macros/s/AKfycby8mjRAVPgtvHVR4NcMplV4oTaPfOOAJofuKR2Vqt_BzolCc-nxXxVaV8Ry9j1t1J5IyQ/exec'
     )}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
