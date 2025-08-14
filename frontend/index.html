@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="icon" href="data:,">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Smash Image Uploader</title>
@@ -9,79 +8,87 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
  <script src="https://unpkg.com/@lottiefiles/dotlottie-wc@0.6.2/dist/dotlottie-wc.js" type="module"></script>
- <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Montserrat', sans-serif;
-      background: url('https://images.unsplash.com/photo-1614850523011-8f49ffc73908?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D') no-repeat center center fixed;
-      background-size: cover;
-      color: #ffffff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      padding: 40px 20px;
-      min-height: 100vh;
-    }
-  
-    #logo {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      height: 40px;
-      filter: brightness(0) invert(1);
-    }
-    h1 {
-      font-size: 3rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-    }
-    p {
-      color: #E0E0E0;
-      font-size: 1rem;
-      margin-bottom: 48px;
-    }
-    #drop-zone {
-      border: 1px dashed #ffffff;
-      border-radius: 16px;
-      border-spacing: 6px;
-      background-color: rgba(0, 0, 0, 0.4);
-      width: 100%;
-      max-width: 700px;
-      padding: 40px;
-      text-align: center;
-      margin-bottom: 40px;
-      margin-top: 30px;
-      cursor: pointer;
-    }
-    #drop-zone.hover {
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Montserrat', sans-serif;
+  background: url('https://images.unsplash.com/photo-1614850523011-8f49ffc73908?q=80&w=2340&auto=format&fit=crop&ixlib=rb-4.1.0') no-repeat center center fixed;
+  background-size: cover;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 40px 20px;
+  min-height: 100vh;
+}
+
+#logo {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  height: 40px;
+  filter: brightness(0) invert(1);
+}
+
+h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+p {
+  color: #E0E0E0;
+  font-size: 1rem;
+  margin-bottom: 48px;
+}
+
+/* Drop Zone */
+#drop-zone {
+  border: 1px dashed #ffffff;
+  border-radius: 16px;
+  background-color: rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 700px;
+  padding: 40px;
+  text-align: center;
+  margin: 30px 0 40px 0;
+  cursor: pointer;
+  position: relative;
+  z-index: 999; /* stays on top of backdrop */
+}
+
+#drop-zone.hover {
   box-shadow: 0 0 30px 10px rgba(255, 255, 255, 0.807);
   transition: box-shadow 0.3s ease;
 }
-#add-placeholder {
-  background: #888888;
-  transition: background-color 0.3s ease;
+
+/* Backdrop Overlay with spotlight hole */
+#drop-backdrop {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.5);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease;
+  z-index: 998; /* behind drop-zone */
+  pointer-events: none;
+  clip-path: none; /* updated dynamically */
 }
-#add-placeholder:hover {
-  background: #666666; /* Darker gray on hover */
+#drop-backdrop.active {
+  opacity: 1;
+  visibility: visible;
 }
 
-#reset-images {
-  background: #ef4444; /* Red */
-  transition: background-color 0.3s ease;
-}
-#reset-images:hover {
-  background: #b91c1c; /* Darker red on hover */
-}
-
-
-    input[type="file"] { display: none; }
-   .button {
+/* Buttons */
+.button {
   background: #3b82f6;
   color: white;
   font-size: 0.75rem;
   font-weight: 600;
-  font-family: 'Outfit', sans-serif; /* ✅ Add this line */
+  font-family: 'Outfit', sans-serif;
   padding: 10px 20px;
   border: none;
   border-radius: 8px;
@@ -90,157 +97,154 @@
   letter-spacing: 1.5px;
   text-transform: uppercase;
 }
-    .button:hover { background: #2563eb; }
-    textarea {
-      width: 100%;
-      max-width: 700px;
-      height: 200px;
-      padding: 12px;
-      font-family: monospace;
-      font-size: 14px;
-      background: rgba(0, 0, 0, 0.5);
-      color: #ffffff;
-      border: none;
-      border-radius: 12px;
-      resize: none;
-      margin-top: 30px;
-    }
-    #preview {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-start;
-      gap: 10px;
-      max-width: 700px;
-      margin: 0 auto 20px auto;
-    }
-    .preview-wrapper {
-      position: relative;
-    }
-    .preview-image {
+.button:hover { background: #2563eb; }
+
+#add-placeholder {
+  background: #888888;
+  transition: background-color 0.3s ease;
+}
+#add-placeholder:hover { background: #666666; }
+
+#reset-images {
+  background: #ef4444;
+  transition: background-color 0.3s ease;
+}
+#reset-images:hover { background: #b91c1c; }
+
+.button.uploading {
+  background-color: #b8b8b8 !important;
+  color: black;  
+}
+
+/* Input & Textarea */
+input[type="file"] { display: none; }
+textarea {
+  width: 100%;
+  max-width: 700px;
+  height: 200px;
+  padding: 12px;
+  font-family: monospace;
+  font-size: 14px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  resize: none;
+  margin-top: 30px;
+}
+#sheet-url-input::placeholder {
+  color: #000000;
+  opacity: 0.2;
+  font-style: italic;
+}
+
+/* Preview Items */
+#preview {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 10px;
+  max-width: 700px;
+  margin: 0 auto 20px auto;
+}
+.preview-item {
+  position: relative;
+  display: inline-block;
+  margin: 5px;
+}
+.preview-image {
   width: 90px;
   height: 90px;
-      object-fit: cover;
-      border-radius: 8px;
-      cursor: move;
-    }
-    .remove-button {
-      position: absolute;
-      top: -6px;
-      right: -6px;
-      background: red;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-    .preview-number {
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: move;
+}
+.image-number {
   position: absolute;
   bottom: -6px;
   left: -6px;
-  background: #0051ff;
-  color: #ffffff;
+  background: #007BFF;
+  color: #fff;
+  border-radius: 50%;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  font-weight: bold;
   font-size: 12px;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2;
 }
-
-    #lottie {
-      opacity: 0;
-      transition: opacity 0.5s ease;
-      padding: 40px 0;
-    }
-    #lottie img {
-      height: 64px;
-    }
-    #progress-bar {
-      width: 100%;
-      max-width: 700px;
-      height: 6px;
-      background-color: rgba(255, 255, 255, 0.2);
-      border-radius: 3px;
-      overflow: hidden;
-      margin: 20px 0;
-    }
-    #progress-fill {
-      height: 100%;
-      background-color: white;
-      width: 0%;
-      transition: width 0.3s ease;
-    }
-  
-    .button.uploading {
-  background-color: #b8b8b8 !important; /* Yellow */
-  color: black;  
+.remove-button {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: red;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 16px;
 }
 
+/* Progress Bar */
+#lottie {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  padding: 40px 0;
+}
+#lottie img { height: 64px; }
+
+#progress-bar {
+  width: 100%;
+  max-width: 700px;
+  height: 6px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 20px 0;
+}
+#progress-fill {
+  height: 100%;
+  background-color: white;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* Button Grid */
 #button-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  column-gap: 16px;   /* smaller horizontal space between columns */
-  row-gap: 0px;      /* tighter vertical space between rows */
+  column-gap: 16px;
+  row-gap: 0px;
   margin: 40px auto 0 auto;
   max-width: 700px;
   width: 100%;
   padding: 0 10px;
   box-sizing: border-box;
 }
-
-
 #button-grid .button {
   width: 100%;
-  font-size: 0.7rem; /* smaller text */
+  font-size: 0.7rem;
   padding: 10px 12px;
   letter-spacing: 1px;
 }
-#sheet-url-input::placeholder {
-  color: #000000;
-  opacity: 0.2;
-   font-style: italic;
-}
+
+/* Accessibility Focus */
 @keyframes pulseFade {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
 }
- body.user-is-tabbing *:focus {
+body.user-is-tabbing *:focus {
   outline: 2px solid white;
   box-shadow: 0 0 6px 2px rgba(255, 255, 255, 0.6);
 }
-  body:not(.user-is-tabbing) *:focus {
-    outline: none;
-  }
- #drop-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.6); /* darken */
-  z-index: 999; /* Just below drop-zone */
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
+body:not(.user-is-tabbing) *:focus { outline: none; }
+</style>
 
-#drop-backdrop.active {
-  opacity: 1;
-}
-
-/* Make sure drop-zone is ABOVE the backdrop */
-#drop-zone {
-  position: relative;
-  z-index: 1000;
-}
-
-  </style>
 </head>
 <body>
   <div id="drop-backdrop"></div>
@@ -314,459 +318,284 @@
   <button id="paste-image-ref-6" class="button">Paste as Image Ref 6</button>
   <button id="paste-image-ref-7" class="button">Paste as Image Ref 7</button>
 </div>
-
-
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+  const dropZone = document.getElementById('drop-zone');
+  const backdrop = document.getElementById('drop-backdrop');
+  const fileInput = document.getElementById('file-input');
+  const preview = document.getElementById('preview');
+  const output = document.getElementById('output');
+  const progressFill = document.getElementById('progress-fill');
+  const confirmBtn = document.getElementById('confirm-order');
+  const anim = document.getElementById('loadingAnim');
+  const sheetInput = document.getElementById('sheet-url-input');
 
   let filesArray = [];
-let dragCounter = 0; // ✅ Move here to ensure it's global
+  let dragCounter = 0;
+  let completedUploads = 0;
+  let cleanedSheetId = "";
 
-// --- URL cleaning helper (robust) ---
-  function cleanUrl(u) {
-    try {
-      const url = new URL(u);
-      return `${url.origin}${url.pathname}`; // strips ?query and #hash
-    } catch {
-      return String(u).split('#')[0].split('?')[0];
-    }
-  }
-
-  // ========== IMAGE COMPRESSION ==========
-async function compressImage(file, maxWidth = 1600, maxHeight = 1600, quality = 0.85) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      img.src = e.target.result;
-    };
-
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-
-      // Resize if larger than max
-      if (width > maxWidth || height > maxHeight) {
-        const scale = Math.min(maxWidth / width, maxHeight / height);
-        width *= scale;
-        height *= scale;
-      }
-
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-
-      canvas.toBlob(
-        (blob) => {
-          resolve(new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg', lastModified: Date.now() }));
-        },
-        'image/jpeg',
-        quality
-      );
-    };
-
-    reader.readAsDataURL(file);
+  sheetInput.addEventListener("input", function () {
+    const input = this.value.trim();
+    const match = input.match(/\/d\/([a-zA-Z0-9-_]+)/);
+    cleanedSheetId = match ? match[1] : input;
   });
-}
 
-function getPreviewDataUrl(file) {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target.result);
-    reader.readAsDataURL(file);
-  });
-}
-function generateRandomName(length = 4) {
-  const chars = 'abcdefghijklmnopqrstuvwxyz';
-  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-}
-
-const dropZone = document.getElementById("drop-zone");
-const backdrop = document.getElementById('drop-backdrop');
-const fileInput = document.getElementById('file-input');
-
-// ✅ Clicking the drop zone opens the file selector
-dropZone.addEventListener('click', () => {
-  fileInput.click();
-});
-const handleFiles = async (files) => {
-  const fileList = Array.from(files);
-
-  for (const file of fileList) {
-    // Generate random file name
-    const randomName = `${generateRandomName()}.jpg`;
-
-    // Compress image if larger than ~1MB
-    const compressedFile = (file.size > 1_000_000)
-      ? await compressImage(file, 1600, 1600, 0.85)
-      : file;
-
-    // Create a new File with the random name
-    const renamedFile = new File([compressedFile], randomName, {
-      type: 'image/jpeg',
-      lastModified: Date.now(),
+  ['dragover', 'drop'].forEach(eventName => {
+    document.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
     });
-
-    // Generate preview data
-    renamedFile.previewData = await getPreviewDataUrl(renamedFile);
-    filesArray.push(renamedFile);
-  }
-
-  // Sort files by name (optional, now random)
-  filesArray.sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { numeric: true }));
-  updatePreview();
-};
-
-// ✅ Prevent default and handle global drop
-window.addEventListener("dragover", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-});
-
-window.addEventListener("drop", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-
-  dropZone.classList.remove("hover");
-  backdrop.classList.remove("active");
-  dragCounter = 0;
-
-  const dt = e.dataTransfer;
-  if (dt?.files?.length) {
-    handleFiles(dt.files);
-  }
-});
-
-// ✅ Drop zone hover effects (optional visual feedback)
-dropZone.addEventListener("dragover", (e) => {
-  e.preventDefault();
-  dropZone.classList.add("hover");
-});
-dropZone.addEventListener("dragleave", () => {
-  dropZone.classList.remove("hover");
-});
-
-</script>
-
-<script>
-
-    const preview = document.getElementById('preview');
-    const output = document.getElementById('output');
-    const progressFill = document.getElementById('progress-fill');
-
-  
-// ✅ Handle manual file selection
-fileInput.addEventListener('change', (e) => {
-  if (e.target.files.length > 0) {
-    handleFiles(e.target.files);
-  }
-});
-
-   let isSorting = false;
-
-
-    const updatePreview = () => {
-  preview.innerHTML = '';
-  filesArray.forEach((file, i) => {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'preview-wrapper';
-
-    if (file.isPlaceholder) {
-      // ✅ Placeholder Styling
-      const placeholder = document.createElement('div');
-      placeholder.style.width = '90px';
-      placeholder.style.height = '90px';
-      placeholder.style.display = 'flex';
-      placeholder.style.alignItems = 'center';
-      placeholder.style.justifyContent = 'center';
-      placeholder.style.border = '2px dashed #ccc';
-      placeholder.style.borderRadius = '8px';
-      placeholder.style.color = '#ccc';
-      placeholder.style.fontSize = '12px';
-      placeholder.textContent = 'EMPTY';
-      wrapper.appendChild(placeholder);
-    } else {
-      // ✅ Normal Image Preview
-      const img = document.createElement('img');
-      img.src = file.previewData;
-      img.className = 'preview-image';
-      wrapper.appendChild(img);
-    }
-
-    // Number badge
-    const label = document.createElement('div');
-    label.className = 'preview-number';
-    label.textContent = i + 1;
-
-    // Remove button
-    const remove = document.createElement('button');
-    remove.className = 'remove-button';
-    remove.textContent = '×';
-    remove.onclick = () => {
-      filesArray.splice(i, 1);
-      updatePreview();
-    };
-
-    wrapper.appendChild(label);
-    wrapper.appendChild(remove);
-    preview.appendChild(wrapper);
   });
-};
 
-// ✅ Add placeholder button click here
-    document.getElementById('add-placeholder').addEventListener('click', () => {
-      filesArray.push({ isPlaceholder: true });
-      updatePreview();
-    }); 
+  function updateBackdropHole() {
+    const rect = dropZone.getBoundingClientRect();
+    const padding = 10;
+    const top = rect.top - padding;
+    const left = rect.left - padding;
+    const right = rect.right + padding;
+    const bottom = rect.bottom + padding;
 
-document.getElementById('reset-images').addEventListener('click', () => {
-    filesArray = [];
-    updatePreview();
-    fileInput.value = "";
-    dragCounter = 0;
-    backdrop.classList.remove('active');
-    dropZone.classList.remove('hover');
-    progressFill.style.width = '0%';
-    output.value = "";
-});
-
-document.addEventListener('dragenter', (e) => {
- if (isSorting || e.dataTransfer.types[0] !== 'Files') return; // ✅ Ignore all drags during sorting
-  e.preventDefault();
-  dragCounter++;
-  backdrop.classList.add('active');
-  dropZone.classList.add('hover');
-});
-
-document.addEventListener('dragleave', (e) => {
- if (isSorting || e.dataTransfer.types[0] !== 'Files') return; // ✅ Ignore leave events during sorting
-  dragCounter--;
-  if (dragCounter <= 0) {
-    dragCounter = 0;
-    backdrop.classList.remove('active');
-    dropZone.classList.remove('hover');
+    backdrop.style.clipPath = `polygon(
+      0% 0%, 100% 0%, 100% 100%, 0% 100%,
+      0% 0%, ${left}px 0%, ${left}px ${top}px, ${right}px ${top}px,
+      ${right}px ${bottom}px, ${left}px ${bottom}px, ${left}px 0%
+    )`;
   }
-});
 
-new Sortable(preview, {
-  animation: 150,
-  onStart: () => { isSorting = true; },
-  onEnd: () => { 
-    isSorting = false; 
-    dragCounter = 0; // ✅ Reset counter after sorting
-    backdrop.classList.remove('active');
-    dropZone.classList.remove('hover');
+  function updatePreview() {
+    preview.innerHTML = '';
+    filesArray.forEach((file, index) => {
+      const item = document.createElement('div');
+      item.className = 'preview-item';
+      item.setAttribute('data-index', index);
 
-    const children = Array.from(preview.children);
-    const newOrder = children.map((child) => {
-      const img = child.querySelector('img');
-      if (img) {
-        return filesArray.find(f => !f.isPlaceholder && f.previewData === img.src);
+      if (file.isPlaceholder) {
+        const placeholder = document.createElement('div');
+        Object.assign(placeholder.style, {
+          width: '90px',
+          height: '90px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '2px dashed #ccc',
+          borderRadius: '8px',
+          color: '#ccc',
+          fontSize: '12px'
+        });
+        placeholder.textContent = 'EMPTY';
+        item.appendChild(placeholder);
       } else {
-        const availablePlaceholders = filesArray.filter(f => f.isPlaceholder).slice();
-return availablePlaceholders.shift();
+        const img = document.createElement('img');
+        img.src = file.previewData;
+        img.className = 'preview-image';
+        item.appendChild(img);
       }
-    }).filter(Boolean);
 
-    filesArray = newOrder;
-    updatePreview();
+      const label = document.createElement('div');
+      label.className = 'image-number';
+      label.textContent = index + 1;
+      item.appendChild(label);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'remove-button';
+      removeBtn.innerHTML = '&times;';
+      removeBtn.onclick = () => {
+        filesArray.splice(index, 1);
+        updatePreview();
+      };
+      item.appendChild(removeBtn);
+
+      preview.appendChild(item);
+    });
   }
-});
 
- document.getElementById('confirm-order').addEventListener('click', async () => {
-  await uploadAndPasteLinks();
-  
-  const ensureUnder500KB = async (file) => {
-    let quality = 0.8;
-    let compressed = file;
+  function handleFiles(fileList) {
+    const orderedFiles = Array.from(fileList);
+    orderedFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        filesArray.push({ file, previewData: e.target.result });
+        updatePreview();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
 
-    const compressToJpeg = async (input, q) => {
-      return new Promise((resolve) => {
+  document.getElementById('add-placeholder').addEventListener('click', () => {
+    filesArray.push({ isPlaceholder: true });
+    updatePreview();
+  });
+
+  document.getElementById('reset-images').addEventListener('click', () => {
+    filesArray = [];
+    fileInput.value = "";
+    output.value = "";
+    progressFill.style.width = '0%';
+    preview.innerHTML = '';
+  });
+
+  document.addEventListener('dragenter', (e) => {
+    if (e.dataTransfer?.types?.includes('Files')) {
+      dragCounter++;
+      updateBackdropHole();
+      backdrop.classList.add('active');
+      dropZone.classList.add('hover');
+    }
+  });
+
+  document.addEventListener('dragleave', (e) => {
+    if (e.dataTransfer?.types?.includes('Files')) {
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        backdrop.classList.remove('active');
+        dropZone.classList.remove('hover');
+      }
+    }
+  });
+
+  document.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    backdrop.classList.remove('active');
+    dropZone.classList.remove('hover');
+    dragCounter = 0;
+
+    const items = e.dataTransfer?.items;
+    if (items && items.length) {
+      const fileArray = [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) fileArray.push(file);
+        }
+      }
+      handleFiles(fileArray);
+    } else if (e.dataTransfer?.files?.length) {
+      handleFiles(e.dataTransfer.files);
+    }
+  });
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+  window.addEventListener('resize', updateBackdropHole);
+
+  new Sortable(preview, {
+    animation: 0,
+    onEnd: () => {
+      const reordered = [];
+      preview.querySelectorAll('.preview-item').forEach(item => {
+        const idx = parseInt(item.getAttribute('data-index'), 10);
+        reordered.push(filesArray[idx]);
+      });
+      filesArray = reordered;
+      updatePreview();
+    }
+  });
+
+  async function ensureUnder500KB(file) {
+  const compressToJpeg = async (input, quality) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
         const img = new Image();
-        const reader = new FileReader();
-
-        reader.onload = (e) => (img.src = e.target.result);
-
         img.onload = () => {
-          const canvas = document.createElement('canvas');
           let { width, height } = img;
           const maxW = 1600, maxH = 1600;
 
+          // ⛏ Resize if too big
           if (width > maxW || height > maxH) {
             const scale = Math.min(maxW / width, maxH / height);
-            width *= scale;
-            height *= scale;
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
           }
 
+          const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
-
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
           canvas.toBlob((blob) => {
-            resolve(new File([blob], `${generateRandomName()}.jpg`, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            }));
-          }, 'image/jpeg', q);
+            resolve(new File([blob], `${Date.now()}.jpg`, { type: 'image/jpeg' }));
+          }, 'image/jpeg', quality);
         };
-
-        reader.readAsDataURL(input);
-      });
-    };
-
-    let attempts = 0;
-    while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
-      compressed = await compressToJpeg(compressed, quality);
-      quality -= 0.1;
-      attempts++;
-    }
-
-    return compressed;
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(input);
+    });
   };
 
-  const uploadPromises = filesArray.map(async (file) => {
-    if (file.isPlaceholder) {
-      updateProgress();
-      return "";
-    }
+  // Try compressing multiple times until under 500KB
+  let quality = 0.9;
+  let compressed = await compressToJpeg(file, quality);
+  let attempts = 0;
 
-    try {
-      const compressedFile = await ensureUnder500KB(file);
-      const formData = new FormData();
-      formData.append('file', compressedFile);
-
-      const res = await fetch('/.netlify/functions/upload', {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.url) {
-        console.error("Upload failed:", data);
-        return "";
-      }
-
-      return data.url;
-    } catch (err) {
-      console.error("Upload error:", err);
-      return "";
-    } finally {
-      updateProgress();
-    }
-  });
-
-  try {
-    const links = await Promise.all(uploadPromises);
-    output.value = links.map(link => link?.split('?')[0] || "").join("\n");
-  } catch (err) {
-    console.error("Critical upload error:", err);
-    output.value = "Upload failed.";
-  } finally {
-    confirmBtn.classList.remove('uploading');
-    confirmBtn.textContent = 'Confirm Order';
-    anim.style.opacity = 0;
-    dropZone.classList.remove('hover');
-    backdrop.classList.remove('active');
-    dragCounter = 0;
-  }
-});
-
-</script>
-  
-<script>
-window.addEventListener('DOMContentLoaded', () => {
-  const sheetInput = document.getElementById('sheet-url-input');
-
-  // Helper: Extract sheet ID from URL
-  function getSheetIdFromUrl(url) {
-    const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    return match ? match[1] : null;
+  while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 5) {
+    quality -= 0.1;
+    compressed = await compressToJpeg(file, quality);
+    attempts++;
   }
 
-  // Clean the input to just the sheet ID on blur
-  sheetInput.addEventListener('blur', () => {
-    const url = sheetInput.value.trim();
-    const id = getSheetIdFromUrl(url);
-    if (id) {
-      sheetInput.value = id;
-    }
-  });
-
-  // Show temporary paste confirmation
-  function showPasteConfirm(message) {
-    const el = document.getElementById('paste-confirm');
-    el.textContent = `✔ ${message}`;
-    el.style.display = 'flex';
-    setTimeout(() => {
-      el.style.opacity = 1;
-    }, 10);
-
-    setTimeout(() => {
-      el.style.opacity = 0;
-      setTimeout(() => {
-        el.style.display = 'none';
-        el.textContent = '✔ LINKS PASTED';
-      }, 300);
-    }, 1500);
-  }
-
-  // Paste links to Google Sheet via Web App
- async function pasteLinksToSheet(destColumn, sourceCell) {
-  document.getElementById('loadingAnim').style.opacity = 0;
-  const sheetUrl = sheetInput.value.trim();
-  const links = output.value;
-  if (!sheetUrl || !links) {
-    alert('Please paste a Google Sheet URL and generate links first.');
-    return;
-  }
-
-  let sheetId;
-  if (sheetUrl.length === 44 && /^[a-zA-Z0-9-_]+$/.test(sheetUrl)) {
-    sheetId = sheetUrl;
-  } else {
-    sheetId = getSheetIdFromUrl(sheetUrl);
-  }
-  if (!sheetId) {
-    alert('Invalid Google Sheet URL.');
-    return;
-  }
-
-  const linksArray = output.value.split(/\n/);
-
-  const payload = {
-    sheetId,
-    links: linksArray,
-    destColumn,
-    sourceCell
-  };
-
-  try {
-   await fetch(
-  'https://script.google.com/macros/s/AKfycbzEyBVkE4m6oD1DX5Dyi-7SrXSX9Ye7_Nw7ytADudiHxhKZXzy1mlQGFzZKMjURgZ4u/exec',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    // ✅ Always show success, no matter what
-    showPasteConfirm("Links pasted successfully.");
-    
-  } catch (err) {
-    // Even on network error, just alert but still show success
-    console.error("Error:", err.message);
-    showPasteConfirm("Links pasted successfully.");
-  }
+  return compressed;
 }
 
 
-  // Attach to each button
+  async function uploadAndPasteLinks() {
+    confirmBtn.classList.add('uploading');
+    confirmBtn.textContent = 'UPLOADING...';
+    anim.style.opacity = 1;
+    output.value = "";
+    progressFill.style.width = '0%';
+    completedUploads = 0;
+
+    const uploadPromises = filesArray.map(async (file) => {
+      if (file.isPlaceholder) return "";
+      try {
+        const compressed = await ensureUnder500KB(file.file);
+        const formData = new FormData();
+        formData.append("image", compressed);
+        const res = await fetch("/.netlify/functions/upload", { method: "POST", body: formData });
+        const data = await res.json();
+        return data.url || "";
+      } catch {
+        return "";
+      }
+    });
+
+    const links = await Promise.all(uploadPromises);
+    output.value = links.map(link => link?.split('?')[0] || "").join("\n");
+    confirmBtn.classList.remove('uploading');
+    confirmBtn.textContent = 'Confirm Order';
+    anim.style.opacity = 0;
+  }
+
+  confirmBtn.addEventListener('click', uploadAndPasteLinks);
+
+  async function pasteLinksToSheet(destColumn, sourceCell) {
+    const links = output.value;
+    const sheetId = cleanedSheetId;
+    if (!sheetId || !links) {
+      alert("Please check your Google Sheet URL and upload links first.");
+      return;
+    }
+    const payload = { sheetId, links: links.split(/\n/), destColumn, sourceCell };
+    await fetch(`https://corsproxy.io/?${encodeURIComponent(
+      'https://script.google.com/macros/s/AKfycbzEyBVkE4m6oD1DX5Dyi-7SrXSX9Ye7_Nw7ytADudiHxhKZXzy1mlQGFzZKMjURgZ4u/exec'
+    )}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const el = document.getElementById('paste-confirm');
+    el.textContent = '✔ Links pasted successfully.';
+    el.style.display = 'flex';
+    el.style.opacity = 1;
+    setTimeout(() => { el.style.opacity = 0; el.style.display = 'none'; }, 1500);
+  }
+
   document.getElementById('paste-product-image')?.addEventListener('click', () => pasteLinksToSheet('I', 'I2'));
   document.getElementById('paste-image-ref-1')?.addEventListener('click', () => pasteLinksToSheet('N', 'N2'));
   document.getElementById('paste-image-ref-2')?.addEventListener('click', () => pasteLinksToSheet('Z', 'Z2'));
@@ -776,111 +605,6 @@ window.addEventListener('DOMContentLoaded', () => {
   document.getElementById('paste-image-ref-6')?.addEventListener('click', () => pasteLinksToSheet('AD', 'AD2'));
   document.getElementById('paste-image-ref-7')?.addEventListener('click', () => pasteLinksToSheet('AE', 'AE2'));
 });
-
-async function uploadAndPasteLinks() {
-  const confirmBtn = document.getElementById('confirm-order');
-  const anim = document.getElementById('loadingAnim');
-  const output = document.getElementById('output');
-  const dropZone = document.getElementById('drop-zone');
-  const backdrop = document.getElementById('drop-backdrop');
-
-  confirmBtn.classList.add('uploading');
-  confirmBtn.textContent = 'UPLOADING...';
-  anim.style.opacity = 1;
-  output.value = "";
-  progressFill.style.width = '0%';
-
-  let completed = 0;
-  const updateProgress = () => {
-    completed++;
-    const percent = filesArray.length ? Math.round((completed / filesArray.length) * 100) : 100;
-    progressFill.style.width = `${percent}%`;
-  };
-
-  // keep under 500KB
-  const ensureUnder500KB = async (file) => {
-    let quality = 0.8;
-    let compressed = file;
-    const compressToJpeg = async (input, q) => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        const img = new Image();
-        reader.onload = (e) => (img.src = e.target.result);
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let { width, height } = img;
-          const maxW = 1600, maxH = 1600;
-          if (width > maxW || height > maxH) {
-            const scale = Math.min(maxW / width, maxH / height);
-            width *= scale;
-            height *= scale;
-          }
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          canvas.toBlob((blob) => {
-            resolve(new File([blob], `${generateRandomName()}.jpg`, {
-              type: 'image/jpeg',
-              lastModified: Date.now(),
-            }));
-          }, 'image/jpeg', q);
-        };
-        reader.readAsDataURL(input);
-      });
-    };
-
-    let attempts = 0;
-    while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
-      compressed = await compressToJpeg(compressed, quality);
-      quality -= 0.1;
-      attempts++;
-    }
-    return compressed;
-  };
-
-  const uploadPromises = filesArray.map(async (file) => {
-    if (file.isPlaceholder) {
-      updateProgress();
-      return "";
-    }
-    try {
-      const compressedFile = await ensureUnder500KB(file);
-      const formData = new FormData();
-      formData.append('file', compressedFile); // keep 'file' for your Netlify function
-
-      const res = await fetch('/.netlify/functions/upload', { method: 'POST', body: formData });
-      const data = await res.json();
-
-      const url = data?.url ? cleanUrl(data.url) : "";
-      return url;
-    } catch (err) {
-      console.error("Upload error:", err);
-      return "";
-    } finally {
-      updateProgress();
-    }
-  });
-
-  try {
-    const links = (await Promise.all(uploadPromises))
-      .map(cleanUrl)
-      .filter(Boolean)
-      .filter((v, i, arr) => arr.indexOf(v) === i); // dedupe
-
-    output.value = links.join("\n");
-  } catch (err) {
-    console.error("Critical upload error:", err);
-    output.value = "Upload failed.";
-  } finally {
-    confirmBtn.classList.remove('uploading');
-    confirmBtn.textContent = 'Confirm Order';
-    anim.style.opacity = 0;
-    dropZone.classList.remove('hover');
-    backdrop.classList.remove('active');
-    dragCounter = 0;
-  }
-}
 </script>
 </body>
 </html>
