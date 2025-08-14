@@ -322,7 +322,6 @@ body:not(.user-is-tabbing) *:focus { outline: none; }
 <script>
 document.addEventListener('DOMContentLoaded', () => {
   const dropZone = document.getElementById('drop-zone');
-  const backdrop = document.getElementById('drop-backdrop');
   const fileInput = document.getElementById('file-input');
   const preview = document.getElementById('preview');
   const output = document.getElementById('output');
@@ -330,74 +329,33 @@ document.addEventListener('DOMContentLoaded', () => {
   const confirmBtn = document.getElementById('confirm-order');
   const anim = document.getElementById('loadingAnim');
   const sheetInput = document.getElementById('sheet-url-input');
-
-  let filesArray = [];
-  let dragCounter = 0;
-  let completedUploads = 0;
   let cleanedSheetId = "";
+  let filesArray = [];
 
+  // ✅ Clean pasted Google Sheet URL
   sheetInput.addEventListener("input", function () {
     const input = this.value.trim();
     const match = input.match(/\/d\/([a-zA-Z0-9-_]+)/);
     cleanedSheetId = match ? match[1] : input;
   });
 
-  function updateBackdropHole() {
-    const rect = dropZone.getBoundingClientRect();
-    const padding = 10;
-    const top = rect.top - padding;
-    const left = rect.left - padding;
-    const right = rect.right + padding;
-    const bottom = rect.bottom + padding;
-
-    backdrop.style.clipPath = `polygon(
-      0% 0%, 100% 0%, 100% 100%, 0% 100%,
-      0% 0%, ${left}px 0%, ${left}px ${top}px, ${right}px ${top}px,
-      ${right}px ${bottom}px, ${left}px ${bottom}px, ${left}px 0%
-    )`;
-  }
+  // ✅ Prevent files from opening in browser
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    document.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    });
+  });
 
   function updatePreview() {
     preview.innerHTML = '';
-    filesArray.forEach((file, index) => {
+    filesArray.forEach((fileObj, index) => {
       const item = document.createElement('div');
       item.className = 'preview-item';
-      item.setAttribute('data-index', index);
-
-      if (file.isPlaceholder) {
-        const placeholder = document.createElement('div');
-        placeholder.style.width = '90px';
-        placeholder.style.height = '90px';
-        placeholder.style.display = 'flex';
-        placeholder.style.alignItems = 'center';
-        placeholder.style.justifyContent = 'center';
-        placeholder.style.border = '2px dashed #ccc';
-        placeholder.style.borderRadius = '8px';
-        placeholder.style.color = '#ccc';
-        placeholder.style.fontSize = '12px';
-        placeholder.textContent = 'EMPTY';
-        item.appendChild(placeholder);
-      } else {
-        const img = document.createElement('img');
-        img.src = file.previewData;
-        img.className = 'preview-image';
-        item.appendChild(img);
-      }
-
-      const label = document.createElement('div');
-      label.className = 'image-number';
-      label.textContent = index + 1;
-      item.appendChild(label);
-
-      const removeBtn = document.createElement('button');
-      removeBtn.className = 'remove-button';
-      removeBtn.innerHTML = '&times;';
-      removeBtn.onclick = () => {
-        filesArray.splice(index, 1);
-        updatePreview();
-      };
-      item.appendChild(removeBtn);
-
+      const img = document.createElement('img');
+      img.src = fileObj.previewData;
+      img.className = 'preview-image';
+      item.appendChild(img);
       preview.appendChild(item);
     });
   }
@@ -414,82 +372,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  document.getElementById('add-placeholder').addEventListener('click', () => {
-    filesArray.push({ isPlaceholder: true });
-    updatePreview();
-  });
-
-  document.getElementById('reset-images').addEventListener('click', () => {
-    filesArray = [];
-    fileInput.value = "";
-    output.value = "";
-    progressFill.style.width = '0%';
-    preview.innerHTML = '';
-  });
-
-  document.addEventListener('dragenter', (e) => {
-    if (e.dataTransfer?.types?.includes('Files')) {
-      dragCounter++;
-      updateBackdropHole();
-      backdrop.classList.add('active');
-      dropZone.classList.add('hover');
-    }
-  });
-
-  document.addEventListener('dragleave', (e) => {
-    if (e.dataTransfer?.types?.includes('Files')) {
-      dragCounter--;
-      if (dragCounter <= 0) {
-        dragCounter = 0;
-        backdrop.classList.remove('active');
-        dropZone.classList.remove('hover');
-      }
-    }
-  });
-
-  document.addEventListener('drop', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    backdrop.classList.remove('active');
-    dropZone.classList.remove('hover');
-    dragCounter = 0;
-
-    const items = e.dataTransfer?.items;
-    if (items && items.length) {
-      const fileArray = [];
-      for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-        if (item.kind === 'file') {
-          const file = item.getAsFile();
-          if (file) fileArray.push(file);
-        }
-      }
-      handleFiles(fileArray);
-    } else if (e.dataTransfer?.files?.length) {
-      handleFiles(e.dataTransfer.files);
-    }
-  });
-
   dropZone.addEventListener('click', () => fileInput.click());
   fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-  window.addEventListener('resize', updateBackdropHole);
 
-  new Sortable(preview, {
-    animation: 0,
-    onEnd: () => {
-      const reordered = [];
-      preview.querySelectorAll('.preview-item').forEach(item => {
-        const idx = parseInt(item.getAttribute('data-index'), 10);
-        reordered.push(filesArray[idx]);
-      });
-      filesArray = reordered;
-      updatePreview();
+  document.addEventListener('drop', (e) => {
+    const files = e.dataTransfer?.files;
+    if (files && files.length) {
+      handleFiles(files);
     }
   });
 
   async function ensureUnder500KB(file) {
     let quality = 0.8;
-    let compressed = file;
     const compressToJpeg = async (input, q) => {
       return new Promise((resolve) => {
         const reader = new FileReader();
@@ -515,6 +409,8 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.readAsDataURL(input);
       });
     };
+
+    let compressed = file;
     let attempts = 0;
     while (compressed.size > 500 * 1024 && quality > 0.4 && attempts < 8) {
       compressed = await compressToJpeg(compressed, quality);
@@ -530,12 +426,10 @@ document.addEventListener('DOMContentLoaded', () => {
     anim.style.opacity = 1;
     output.value = "";
     progressFill.style.width = '0%';
-    completedUploads = 0;
 
-    const uploadPromises = filesArray.map(async (file) => {
-      if (file.isPlaceholder) return "";
+    const uploadPromises = filesArray.map(async (fileObj) => {
       try {
-        const compressed = await ensureUnder500KB(file.file);
+        const compressed = await ensureUnder500KB(fileObj.file);
         const formData = new FormData();
         formData.append("image", compressed);
         const res = await fetch("/.netlify/functions/upload", { method: "POST", body: formData });
